@@ -264,6 +264,20 @@ canvas.chart{width:100%;height:170px;display:block}
 .tl .ev::before{content:"";position:absolute;left:-21px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--ok);border:2px solid var(--navy-2)}
 .tl .ev.pend::before{background:var(--dim-2)}
 .tl .ev.now::before{background:var(--cyan);box-shadow:0 0 0 4px rgba(0,184,217,.2)}
+.relaydot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-left:4px}
+.relaydot.ok{background:var(--ok)} .relaydot.fail{background:var(--red,#E5484D);box-shadow:0 0 0 3px rgba(229,72,77,.18)}
+.relaydot.local{background:var(--dim-2)} .relaydot.in{background:var(--yellow)}
+.docpaper{background:#fff;color:#16233B;border-radius:12px;padding:22px 20px;font-size:12.5px;line-height:1.55;box-shadow:0 4px 18px rgba(0,0,0,.3)}
+.docpaper h4{font-family:var(--disp);font-size:16px;letter-spacing:.06em;color:#0A1F44;margin:0}
+.docpaper .dochead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #0A1F44;padding-bottom:10px;margin-bottom:12px}
+.docpaper .dochex{width:26px;height:30px;background:#00B8D9;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.docpaper table{width:100%;border-collapse:collapse;margin:10px 0}
+.docpaper th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#5A6B84;border-bottom:1.5px solid #D5DEEA;padding:5px 6px}
+.docpaper td{padding:6px;border-bottom:1px solid #EDF1F7}
+.docpaper .num{text-align:right;font-family:var(--mono)}
+.docpaper .docmeta{font-family:var(--mono);font-size:10.5px;color:#5A6B84;text-align:right;line-height:1.7}
+.docpaper .docfoot{margin-top:14px;padding-top:10px;border-top:1.5px dashed #D5DEEA;font-size:10.5px;color:#5A6B84}
+.docbtns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
 .tl .ev b{display:block;font-size:13px}
 .tl .ev small{color:var(--dim);font-size:11.5px;font-family:var(--mono)}
 .who{font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 5px;border-radius:5px;text-transform:uppercase}
@@ -300,6 +314,7 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
       <label class="f"><span>Passphrase</span><input id="lp" type="password" autocomplete="current-password" placeholder="••••••••"></label>
       <button class="btn pri w" id="loginBtn">Sign in</button>
       <p class="hint">Demo — owner / nexrice2026 · cashier / cashier123 · manager / manager123</p>
+      <button type="button" id="agentPortalLink" style="width:100%;margin-top:14px;background:none;border:none;color:var(--cyan,#00B8D9);font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer">🛵 Delivery rider? Register or view your deliveries</button>
     </div>
   </div>
 </div>
@@ -484,11 +499,65 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
 <!-- ─── DISTRIBUTION ─── -->
 <section class="view" id="v-dist">
   <div class="tabs" id="distTabs">
-    <button class="on" data-p="nxm">NEXMART Link</button><button data-p="shop">NEXSHOP</button><button data-p="orders">Orders</button><button data-p="deliv">Dispatch</button>
+    <button class="on" data-p="so">Sales orders</button><button data-p="pricing">Pricing</button><button data-p="reps">Sales team</button><button data-p="route">Routes</button><button data-p="nxm">NEXMART Link</button><button data-p="shop">NEXSHOP</button><button data-p="orders">Orders</button><button data-p="deliv">Dispatch</button><button data-p="agents">Agents</button>
     <button data-p="cust">Customers</button><button data-p="proc">Procurement</button><button data-p="ar">Receivables</button>
   </div>
 
-  <div class="pane on" id="p-nxm">
+  <div class="pane on" id="p-so">
+    <div class="card">
+      <h2 class="sec">Sales orders<span class="spacer"></span><button class="btn pri sm" id="soAdd">+ Sales order</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Order to cash: quote the tier price, check credit, allocate stock, pick FEFO, deliver, invoice, collect.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Open orders</div><div class="val" id="soOpen">0</div><div class="sub" id="soSacks">— sacks</div></div>
+        <div class="kpi acc-y"><div class="lab">Order value</div><div class="val" id="soVal">₱0</div><div class="sub">not yet paid</div></div>
+        <div class="kpi acc-g"><div class="lab">Awaiting payment</div><div class="val" id="soDue">₱0</div><div class="sub" id="soDueN">—</div></div>
+      </div>
+      <div id="soList"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-pricing">
+    <div class="card">
+      <h2 class="sec">Price tiers<span class="spacer"></span><button class="btn pri sm" id="tierAdd">+ Tier</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">One list price, four ways to sell it. Each customer carries a tier; the order screen applies it automatically.</p>
+      <div id="prTiers"></div>
+      <h2 class="sec" style="margin-top:14px;font-size:13px">Volume breaks<span class="spacer"></span><button class="btn sm" id="breakAdd">+ Break</button></h2>
+      <div id="prBreaks"></div>
+      <h2 class="sec" style="margin-top:14px;font-size:13px">Preview — first product</h2>
+      <div id="prPreview"></div>
+      <div class="ai-note"><b>Margin floor</b>Any price that lands within 3% of cost is flagged on the order screen before it is saved.</div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-reps">
+    <div class="card">
+      <h2 class="sec">Sales team &amp; territories<span class="spacer"></span><button class="btn pri sm" id="repAdd">+ Rep</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Quota attainment and commission compute from delivered orders — no separate spreadsheet.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Active reps</div><div class="val" id="repN">0</div><div class="sub" id="repSacks">— sacks sold</div></div>
+        <div class="kpi acc-y"><div class="lab">Sales value</div><div class="val" id="repVal">₱0</div><div class="sub">delivered & up</div></div>
+        <div class="kpi acc-g"><div class="lab">Commission</div><div class="val" id="repComm">₱0</div><div class="sub">earned this period</div></div>
+      </div>
+      <div id="repList"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-route">
+    <div class="card">
+      <h2 class="sec">Routes &amp; van selling<span class="spacer"></span><button class="btn pri sm" id="rtAdd">+ Route</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Load the truck, run the barangay loop, record every call — sold or no-order — and reconcile at the end.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Routes</div><div class="val" id="rtN">0</div><div class="sub">standing loops</div></div>
+        <div class="kpi acc-y"><div class="lab">Running now</div><div class="val" id="rtActive">0</div><div class="sub">on the road</div></div>
+        <div class="kpi acc-g"><div class="lab">Sold today</div><div class="val" id="rtSold">0</div><div class="sub">from route calls</div></div>
+      </div>
+      <div id="rtList"></div>
+      <h2 class="sec" style="margin-top:14px;font-size:13px">Recent runs</h2>
+      <div id="runList"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-nxm">
     <div class="card">
       <h2 class="sec">Channel link<span class="spacer"></span><span class="chip" id="nxStat"><i class="dot off"></i><span>Not linked</span></span></h2>
       <p class="muted" style="margin:-6px 0 10px">NEXRICE sells, NEXMART buys. Each keeps its own Sheet — every stage change writes to yours, posts to theirs, and logs on both sides.</p>
@@ -569,6 +638,19 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
     </div>
   </div>
 
+  <div class="pane" id="p-agents">
+    <div class="card">
+      <h2 class="sec">Delivery agents<span class="spacer"></span><button class="btn sm pri" id="agentRefreshBtn">↻ Refresh</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Riders register themselves from the login screen. Approve them here, then assign one whenever a NEXSHOP order goes out for delivery — the customer sees the rider on a live map.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Approved riders</div><div class="val" id="agN">0</div><div class="sub" id="agAreas">—</div></div>
+        <div class="kpi acc-y"><div class="lab">Pending approval</div><div class="val" id="agPend">0</div><div class="sub">awaiting review</div></div>
+        <div class="kpi acc-g"><div class="lab">Out for delivery</div><div class="val" id="agOut">0</div><div class="sub">right now</div></div>
+      </div>
+      <div id="agList"></div>
+    </div>
+  </div>
+
   <div class="pane" id="p-cust">
     <div class="card">
       <h2 class="sec">Customers<span class="spacer"></span><button class="btn sm pri" id="addCust">+ Customer</button></h2>
@@ -599,6 +681,113 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
 </section>
 
 <!-- ─── INTELLIGENCE ─── -->
+<section class="view" id="v-chain">
+  <div class="tabs" id="chainTabs">
+    <button class="on" data-p="ovs">Suppliers</button><button data-p="wh">Sites</button><button data-p="imp">Import</button>
+    <button data-p="unl">Unloading</button><button data-p="tms">Transport</button><button data-p="wms">Warehouse</button>
+  </div>
+
+  <!-- ══════ SUPPLIERS ══════ -->
+  <div class="pane on" id="p-ovs">
+    <div class="card">
+      <h2 class="sec">Overseas suppliers<span class="spacer"></span><button class="btn pri sm" id="ovsAdd">+ Supplier</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Vietnam, Thailand, Pakistan and local mills in one book — with Incoterm, port of loading, lead time and on-time record.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Suppliers</div><div class="val" id="ovsN">0</div><div class="sub" id="ovsCty">—</div></div>
+        <div class="kpi acc-y"><div class="lab">Avg lead time</div><div class="val" id="ovsLead">—</div><div class="sub">order → arrival</div></div>
+        <div class="kpi acc-g"><div class="lab">On-time record</div><div class="val" id="ovsOtd">—</div><div class="sub">completed shipments</div></div>
+      </div>
+      <div id="ovsList"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-wh">
+    <div class="card">
+      <h2 class="sec">Warehouses &amp; sites<span class="spacer"></span><button class="btn pri sm" id="whAdd">+ Warehouse</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Every bay belongs to a site. Stock moves between sites as a tracked transfer, never a guess.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Sites open</div><div class="val" id="whN">0</div><div class="sub" id="whTypes">—</div></div>
+        <div class="kpi acc-y"><div class="lab">Total capacity</div><div class="val" id="whCap">0</div><div class="sub" id="whUse">—</div></div>
+        <div class="kpi acc-g"><div class="lab">In transit</div><div class="val" id="whTransit">0</div><div class="sub">between sites</div></div>
+      </div>
+      <div id="whList"></div>
+      <h2 class="sec" style="margin-top:14px;font-size:13px">Transfers<span class="spacer"></span><button class="btn sm" id="whMoveBtn">+ Transfer</button></h2>
+      <div id="whMoveList"></div>
+    </div>
+  </div>
+
+  <!-- ══════ IMPORT ══════ -->
+  <div class="pane" id="p-imp">
+    <div class="card">
+      <h2 class="sec">Import shipments<span class="spacer"></span><button class="btn pri sm" id="impAdd">+ Shipment</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Eight stages from purchase order to warehouse receipt — with landed-cost costing and the document pack for BOC clearance.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">In transit</div><div class="val" id="impTransit">0</div><div class="sub" id="impTeu">— containers</div></div>
+        <div class="kpi acc-y"><div class="lab">At port / clearing</div><div class="val" id="impPort">0</div><div class="sub">watch demurrage</div></div>
+        <div class="kpi acc-g"><div class="lab">Landed value</div><div class="val" id="impVal">₱0</div><div class="sub">open shipments</div></div>
+      </div>
+      <div class="ai-note"><b>Rice Tariffication Act (RA 11203)</b>Imported rice from ASEAN origin carries a 35% import duty. Rice is VAT-exempt (NIRC Sec. 109(A)). The calculator below uses these defaults — override per shipment if your broker advises otherwise.</div>
+      <div id="impList"></div>
+    </div>
+  </div>
+
+  <!-- ══════ UNLOADING ══════ -->
+  <div class="pane" id="p-unl">
+    <div class="card">
+      <h2 class="sec">Unloading &amp; discharge<span class="spacer"></span><button class="btn pri sm" id="unlAdd">+ Unloading job</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Tally every sack off the container or vessel — gang, bay, progress, shortlanded and damaged, with a live discharge rate.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Active jobs</div><div class="val" id="unlAct">0</div><div class="sub">discharging now</div></div>
+        <div class="kpi acc-y"><div class="lab">Sacks today</div><div class="val" id="unlToday">0</div><div class="sub" id="unlRate">— sacks/hr</div></div>
+        <div class="kpi acc-r"><div class="lab">Discrepancy</div><div class="val" id="unlDisc">0</div><div class="sub">short + damaged</div></div>
+      </div>
+      <div id="unlList"></div>
+    </div>
+  </div>
+
+  <!-- ══════ TRANSPORT / TMS ══════ -->
+  <div class="pane" id="p-tms">
+    <div class="card">
+      <h2 class="sec">Fleet &amp; live tracking<span class="spacer"></span><button class="btn pri sm" id="tmsAdd">+ Vehicle</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Track by this phone's own GPS, or by a hardware tracker (SinoTrack, Concox GT06, Teltonika) reporting into your backend.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Vehicles</div><div class="val" id="tmsN">0</div><div class="sub" id="tmsMoving">— moving</div></div>
+        <div class="kpi acc-y"><div class="lab">Active trips</div><div class="val" id="tmsTrips">0</div><div class="sub">on the road</div></div>
+        <div class="kpi acc-g"><div class="lab">Distance today</div><div class="val" id="tmsKm">0 km</div><div class="sub">all vehicles</div></div>
+      </div>
+      <canvas id="tmsMap" style="width:100%;height:250px;border-radius:12px;background:#0A1730;display:block;margin-bottom:10px"></canvas>
+      <div class="row tight" style="margin-bottom:10px">
+        <button class="btn pri sm" id="gpsStart">📍 Track with this phone</button>
+        <button class="btn sm" id="gpsStop">Stop</button>
+        <button class="btn sm" id="gpsPull">↻ Pull tracker feed</button>
+      </div>
+      <div id="tmsList"></div>
+    </div>
+  </div>
+
+  <!-- ══════ WAREHOUSE / WMS ══════ -->
+  <div class="pane" id="p-wms">
+    <div class="card">
+      <h2 class="sec">Warehouse map<span class="spacer"></span><button class="btn pri sm" id="wmsAdd">+ Location</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Zones, bays and stacking limits — with putaway suggestions and FEFO-aware pick lists.</p>
+      <label class="f"><span>Site</span><select id="wmsWh"></select></label>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Occupancy</div><div class="val" id="wmsOcc">0%</div><div class="sub" id="wmsCap">— of — sacks</div></div>
+        <div class="kpi acc-y"><div class="lab">Locations</div><div class="val" id="wmsN">0</div><div class="sub" id="wmsFull">— at capacity</div></div>
+        <div class="kpi acc-g"><div class="lab">Open tasks</div><div class="val" id="wmsTasks">0</div><div class="sub">putaway + picks</div></div>
+      </div>
+      <canvas id="wmsMap" style="width:100%;height:210px;border-radius:12px;background:#0A1730;display:block;margin-bottom:10px"></canvas>
+      <div class="row tight" style="margin-bottom:10px">
+        <button class="btn pri sm" id="wmsPutaway">📥 Suggest putaway</button>
+        <button class="btn sm" id="wmsPick">📤 Build pick list</button>
+      </div>
+      <div id="wmsList"></div>
+      <h2 class="sec" style="margin-top:14px;font-size:13px">Tasks</h2>
+      <div id="wmsTaskList"></div>
+    </div>
+  </div>
+</section>
+
 <section class="view" id="v-bi">
   <div class="tabs" id="biTabs">
     <button class="on" data-p="bi">Intelligence</button><button data-p="fc">Forecast</button><button data-p="anom">Anomalies</button>
@@ -775,7 +964,28 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
 <section class="view" id="v-adm">
   <div class="tabs" id="admTabs">
     <button class="on" data-p="notif">Notifications</button><button data-p="conn">Connectors</button>
-    <button data-p="users">Users</button><button data-p="cfg">Settings</button><button data-p="backend">Backend</button><button data-p="audit">Audit</button>
+    <button data-p="users">Users</button><button data-p="cfg">Settings</button><button data-p="lic">License</button><button data-p="backend">Backend</button><button data-p="audit">Audit</button>
+  </div>
+
+  <div class="pane" id="p-lic">
+    <div class="card">
+      <h2 class="sec">License<span class="spacer"></span><span id="licBadge"></span></h2>
+      <div class="grid g3" style="margin-bottom:12px">
+        <div class="kpi acc-c"><div class="lab">Edition</div><div class="val" id="licEd" style="font-size:20px">—</div><div class="sub" id="licTo">—</div></div>
+        <div class="kpi acc-y"><div class="lab">Expires</div><div class="val" id="licExp" style="font-size:20px">—</div><div class="sub" id="licDays">—</div></div>
+        <div class="kpi acc-g"><div class="lab">Cloud status</div><div class="val" id="licCloud" style="font-size:20px">—</div><div class="sub">checked on sync</div></div>
+      </div>
+      <h2 class="sec" style="font-size:13px">Features on this license</h2>
+      <div id="licFeat" class="row tight" style="flex-wrap:wrap;margin-bottom:14px"></div>
+      <div class="ai-note" style="margin-bottom:12px"><b>How it works</b>The key activates offline — no internet needed. When a cloud backend is connected, the Config sheet can additionally suspend the app (<code class="k">LICENSE_STATUS</code>) or switch features on/off remotely (<code class="k">LICENSE_FEATURES</code>) without touching the device.</div>
+      <label class="f"><span>Activation key</span><textarea id="licKey" rows="3" class="mono" placeholder="NEXR.xxxxx.xxxxx" style="font-size:11px"></textarea></label>
+      <div class="row tight">
+        <button class="btn pri" id="licApply">Activate</button>
+        <button class="btn" id="licTrial">Restart 14-day trial</button>
+        <button class="btn dgr" id="licClear">Deactivate</button>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:11px">Site code (bind keys to this install): <b class="mono" id="licSite"></b></p>
+    </div>
   </div>
 
   <div class="pane on" id="p-notif">
@@ -919,6 +1129,7 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
   <button data-v="pos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 14h4"/></svg>POS</button>
   <button data-v="inv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>Inventory</button>
   <button data-v="dist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 7h12v10H1zM13 10h4l4 4v3h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>Distribute</button>
+  <button data-v="chain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17h4l3-9 4 12 3-7h4"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/></svg>Chain</button>
   <button data-v="bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a5 5 0 0 1 5 5c0 2-1 3-1 5H8c0-2-1-3-1-5a5 5 0 0 1 5-5zM9 17h6M10 21h4"/></svg>CYRA</button>
   <button data-v="adm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>Admin</button>
 </nav>
@@ -935,6 +1146,10 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
    ════════════════════════════════════════════════════════════════ */
 'use strict';
 const $ = s => document.querySelector(s);
+// Public config for the delivery-agent portal — usable BEFORE any staff login.
+// Paste the same Apps Script URL + SHOP_KEY you already gave NEXSHOP so a
+// rider's own phone can register / share GPS without a staff account.
+const AGENT_CFG = { gas: '', shopKey: '' };
 const $$ = s => [...document.querySelectorAll(s)];
 const P = n => '₱' + (+n || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const Pk = n => '₱' + Math.round(+n || 0).toLocaleString('en-PH');
@@ -980,7 +1195,7 @@ function idbGet(k) {
 
 const DEFAULTS = () => ({
   cfg: {name: 'NEXRICE Grains Trading', branch: 'Main Warehouse', cur: '₱', sack: 50, vat: 0, low: 20, gas: '', key: '', ai: 'local', aiKey: '', logo: '', logoName: ''},
-  users: [], products: [], lots: [], sales: [], orders: [], customers: [], suppliers: [], pos: [],
+  users: [], products: [], lots: [], sales: [], orders: [], customers: [], suppliers: [], pos: [], agents: [],
   bins: ['Bay A', 'Bay B', 'Bay C', 'Retail Front', 'Cold Store'],
   moves: [], audit: [], outbox: [], connectors: [], rules: [], queue: [], chats: [], models: {},
   meta: {seeded: false, lastSync: null}
@@ -1221,6 +1436,13 @@ window.logout = async () => { await audit('logout', {}); sessionStorage.clear();
 
 /* ── Navigation ── */
 $$('#nav button').forEach(b => b.onclick = () => {
+  const need = LIC.VIEWFEAT[b.dataset.v];
+  if (need && !lic(need)) {
+    return toast('🔒 ' + LIC.FEATNAMES[need] + ' is not on this license — see Admin → License.');
+  }
+  if (S.lic && S.lic.cloud === 'suspended' && b.dataset.v !== 'adm') {
+    return toast('🔒 License suspended' + (S.lic.cloudMsg ? ' — ' + S.lic.cloudMsg : ' by the cloud backend.'));
+  }
   $$('#nav button').forEach(x => x.classList.remove('on'));
   b.classList.add('on');
   $$('.view').forEach(v => v.classList.remove('on'));
@@ -1228,6 +1450,13 @@ $$('#nav button').forEach(b => b.onclick = () => {
   scrollTo(0, 0);
   render(b.dataset.v);
 });
+function licNavPaint(){
+  $$('#nav button').forEach(b => {
+    const need = LIC.VIEWFEAT[b.dataset.v];
+    const locked = (need && !lic(need)) || (S.lic && S.lic.cloud === 'suspended' && b.dataset.v !== 'adm');
+    b.style.opacity = locked ? .38 : '';
+  });
+}
 function tabWire(id) {
   $$('#' + id + ' button').forEach(b => b.onclick = () => {
     $$('#' + id + ' button').forEach(x => x.classList.remove('on'));
@@ -2538,6 +2767,14 @@ const SCHEMA = [
   ['Users', 'id · u · salt · hash · role · name · active · created'],
   ['Audit', 'id · ts · user · action · detail · prev · hash'],
   ['Outbox', 'id · ts · ch · to · msg · status'],
+  ['DeliveryAgents', 'id · ts · name · phone · vehicle · plate · areas · status · code — courier registration & approval'],
+  ['ShopQnA', 'id · ts · sku · name · q · a — product questions; type replies in column a'],
+  ['Subscriptions', 'id · ts · phone · biz · sku · name · qty · freq · next · unit · active — recurring rice deliveries'],
+  ['Broadcasts', 'ts · title · body · link — add a row to push a store update to followers'],
+  ['Followers', 'phone · on · ts — store-follow opt-ins'],
+  ['TradeAccounts', 'id · ts · biz · type · name · phone · area · addr · permit · tier · status · code · addresses — NEXSHOP retailer/distributor accounts'],
+  ['Tiers', 'id · name · pct · min — optional price-tier overrides for NEXSHOP'],
+  ['GPSFeed', 'ts · dev · lat · lon · spd · hdg · raw — vehicle tracker positions'],
   ['Vouchers', 'code · kind(fixed/pct/ship) · value · min · cap · label · desc · active — NEXSHOP vouchers'],
   ['Reviews', 'ts · sku · order_no · name · stars · text — verified against ShopOrders'],
   ['ShopChat', 'ts · name · phone · text — customer messages'],
@@ -2545,7 +2782,7 @@ const SCHEMA = [
   ['Ads', 'id · title · text · image_url · link · color · active · slot  — NEXSHOP promos'],
   ['Deals', 'id · ref · stage · sacks · total · paid · quote · po · dr · saleId · created · closed  — NEXMART channel'],
   ['TradeLog', 'ts · deal · ref · event · note · direction · payload  — every wire crossing'],
-  ['Config', 'key · value — SEMAPHORE_KEY · WA_TOKEN · VIBER_TOKEN · FB_TOKEN · AI_KEY · <b>NEXMART_URL · TRADE_KEY</b> (B2B, sheet-only) · <b>SHOP_KEY</b> · SHOP_DELIVERY_FEE · SHOP_FREE_OVER · OWNER_EMAIL']
+  ['Config', 'key · value — GPS_KEY · LICENSE_STATUS · LICENSE_FEATURES · LICENSE_MSG · SEMAPHORE_KEY · WA_TOKEN · VIBER_TOKEN · FB_TOKEN · AI_KEY · <b>NEXMART_URL · TRADE_KEY</b> (B2B, sheet-only) · <b>SHOP_KEY</b> · SHOP_DELIVERY_FEE · SHOP_FREE_OVER · OWNER_EMAIL']
 ];
 const GAS = String.raw`/**
  * NEXRICE — Google Apps Script backend
@@ -2576,7 +2813,16 @@ function doGet(e){
   if (a === 'shop_track'   && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopTrack(e.parameter.order, e.parameter.phone));
   if (a === 'shop_vouchers'&& e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopVouchers());
   if (a === 'shop_reviews' && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopReviews());
+  if (a === 'shop_tiers'   && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopTiers());
+  if (a === 'shop_qna_list'   && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok({qna: shopQnaList()});
+  if (a === 'shop_broadcasts' && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok({broadcasts: shopBroadcasts()});
+  if (a === 'shop_account' && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopAccount(e.parameter.phone, e.parameter.code));
+  if (a === 'agent_login'      && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(agentLogin(e.parameter.phone, e.parameter.code));
+  if (a === 'agent_deliveries' && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(agentDeliveries(e.parameter.phone, e.parameter.code));
+  if (a === 'agent_list'       && auth(e)) return ok({agents: agentList()});
   if (a === 'shop_list'    && auth(e)) return ok({orders: readTab('shopOrders')});
+  if (a === 'license_check' && auth(e)) return ok(licenseCheck());
+  if (a === 'gps_list'     && auth(e)) return ok({fixes: gpsList()});
   if (a === 'pull'){
     var out = {};
     ['products','lots','sales','orders','customers','suppliers'].forEach(function(t){ out[t] = readTab(t); });
@@ -2588,6 +2834,42 @@ function doGet(e){
 function doPost(e){
   var a = e.parameter.action;
   // Public storefront intake — guarded by SHOP_KEY, never by the admin key
+  if (a === 'gps'){
+    // Hardware trackers (SinoTrack / Concox GT06 / Teltonika) or the driver app post here.
+    var isFleet = e.parameter.key === (cfg('GPS_KEY') || API_KEY);
+    // Delivery agents post their own position too, authenticated by their own phone+code —
+    // never the fleet/admin key — and only for their own dev id ("AGENT:<phone>").
+    var dev = String(e.parameter.dev || '');
+    var isAgent = !isFleet && e.parameter.key === (cfg('SHOP_KEY') || 'unset-shop-key') &&
+      dev.indexOf('AGENT:') === 0 && agentAuth_(dev.slice(6), e.parameter.code);
+    if (!isFleet && !isAgent) return err('bad gps key');
+    return ok(gpsWrite(e.parameter));
+  }
+  if (a === 'agent_register' || a === 'agent_confirm'){
+    if (e.parameter.key !== (cfg('SHOP_KEY') || 'unset-shop-key')) return err('bad shop key');
+    try {
+      var agp = JSON.parse(e.parameter.payload || '{}');
+      if (a === 'agent_register') return ok(agentRegister(agp));
+      if (a === 'agent_confirm')  return ok(agentConfirm(agp));
+    } catch (ex){ return err(String(ex)); }
+  }
+  if (a === 'shop_qna' || a === 'shop_subscribe' || a === 'shop_follow'){
+    if (e.parameter.key !== (cfg('SHOP_KEY') || 'unset-shop-key')) return err('bad shop key');
+    try {
+      var qp = JSON.parse(e.parameter.payload || '{}');
+      if (a === 'shop_qna')       return ok(shopQnaPost(qp));
+      if (a === 'shop_subscribe') return ok(shopSubscribe(qp));
+      if (a === 'shop_follow')    return ok(shopFollow(qp));
+    } catch (ex){ return err(String(ex)); }
+  }
+  if (a === 'shop_register' || a === 'shop_account_update'){
+    if (e.parameter.key !== (cfg('SHOP_KEY') || 'unset-shop-key')) return err('bad shop key');
+    try {
+      var rp = JSON.parse(e.parameter.payload || '{}');
+      if (a === 'shop_register')        return ok(shopRegister(rp));
+      if (a === 'shop_account_update')  return ok(shopAccountUpdate(rp));
+    } catch (ex){ return err(String(ex)); }
+  }
   if (a === 'shop_order' || a === 'shop_review' || a === 'shop_cancel' || a === 'shop_chat'){
     if (e.parameter.key !== (cfg('SHOP_KEY') || 'unset-shop-key')) return err('bad shop key');
     try {
@@ -2608,6 +2890,8 @@ function doPost(e){
     if (a === 'nexmart') return ok(nexmartRelay(e.parameter.url, e.parameter.tradeKey, e.parameter.event, e.parameter.note, e.parameter.payload));
     if (a === 'image')       return ok(saveImage(e.parameter.name, e.parameter.data));
     if (a === 'shop_status')  return ok(shopStatus(e.parameter.order, e.parameter.status));
+    if (a === 'agent_set_status') return ok(agentSetStatus(e.parameter.id, e.parameter.status));
+    if (a === 'shop_assign_agent') return ok(shopAssignAgent(e.parameter.order, e.parameter.agent_id));
   } catch(ex){ return err(String(ex)); }
   return err('unknown action');
 }
@@ -2883,23 +3167,37 @@ function saveImage(name, dataUrl){
    what actually deducts inventory (and syncs it back up).
    ══════════════════════════════════════════════════════════════ */
 function shopOrder(o){
+  if (licenseSuspended_()) throw new Error('The store is temporarily offline - please try again later.');
   if (!o.name || !o.phone || !(o.items || []).length) throw new Error('incomplete order');
   var sh = sheet('ShopOrders', ['id','order_no','ts','name','phone','area','address','note',
-    'items','subtotal','delivery','total','payment_method','payment_ref','payment_status','status']);
+    'items','subtotal','delivery','total','payment_method','payment_ref','payment_status','status',
+    'account_id','tier','channel','agent_id','agent_name','agent_phone','agent_delivered_ts']);
   // Idempotent: the storefront retries after network drops
   var d = sh.getLastRow() > 1 ? sh.getRange(2,2,sh.getLastRow()-1,1).getValues().flat() : [];
   if (d.indexOf(o.order_no) >= 0) return {order_no: o.order_no, duplicate: true};
 
-  // Server-side re-price against the live Products tab — client totals are never trusted
+  // Server-side re-price against the live Products tab — client totals are never trusted.
+  // Trade accounts are re-priced at THEIR approved tier, never the price the browser sent.
   var prods = readTab('products');
+  var acct = (o.account_phone) ? shopAccount(o.account_phone, '').account : null;
+  var tierPct = 0, tierName = 'Retail';
+  if (acct && acct.status === 'approved'){
+    var tier = shopTiers().tiers.find(function(t){ return t.id === acct.tier; });
+    if (tier){ tierPct = Number(tier.pct) || 0; tierName = tier.name;
+      // enforce the tier minimum
+      var totalSacks = o.items.reduce(function(a,it){ return a + Math.floor(Number(it.qty||0)); }, 0);
+      if (totalSacks < Number(tier.min || 1)) throw new Error('Minimum ' + tier.min + ' sacks for ' + tier.name);
+    }
+  }
   var sub = 0, checked = [];
   o.items.forEach(function(it){
     var p = prods.find(function(x){ return x.id === it.product_id || x.id === it.sku; });
     if (!p) throw new Error('unknown item: ' + it.name);
     var qty = Math.max(1, Math.floor(Number(it.qty || 0)));
     if (qty > Number(p.qty || 0)) throw new Error('only ' + p.qty + ' left of ' + p.name);
-    sub += qty * Number(p.price);
-    checked.push({sku: p.id, name: p.name, qty: qty, price: Number(p.price), line_total: qty * Number(p.price)});
+    var unit = Math.round(Number(p.price) * (100 - tierPct)) / 100;
+    sub += qty * unit;
+    checked.push({sku: p.id, name: p.name, qty: qty, price: unit, line_total: qty * unit});
   });
   var fee = Number(cfg('SHOP_DELIVERY_FEE') || 49), freeOver = Number(cfg('SHOP_FREE_OVER') || 1500);
   var delivery = sub >= freeOver ? 0 : fee, total = sub + delivery;
@@ -2910,7 +3208,7 @@ function shopOrder(o){
     JSON.stringify(checked), sub, delivery, total,
     o.payment_method || 'cod', o.payment_ref || '',
     o.payment_method === 'cod' ? 'collect on delivery' : (o.payment_ref ? 'reference submitted — verify' : 'awaiting payment'),
-    'placed']);
+    'placed', o.account_id || '', tierName, o.channel || 'Online']);
 
   // Tell the owner a shop order just landed
   var owner = cfg('OWNER_EMAIL');
@@ -2922,16 +3220,149 @@ function shopOrder(o){
   return {order_no: orderNo, total: total};
 }
 
+/* ══════════════ DELIVERY AGENTS ══════════════
+   Riders/couriers self-register from the NEXRICE login screen (no staff
+   account needed) and land in DeliveryAgents as "pending". Approve them
+   from Distribute → Agents. Once approved, an agent logs in on their own
+   phone with phone+code, sees deliveries assigned to them, and can share
+   their live position — which NEXSHOP shows the customer as "Out for
+   delivery" progresses on a live map.
+   DeliveryAgents: id | ts | name | phone | vehicle | plate | areas | status | code
+   ================================================================== */
+function agentRegister(a){
+  if (!a.name || !a.phone) throw new Error('Name and phone are required');
+  var sh = sheet('DeliveryAgents', ['id','ts','name','phone','vehicle','plate','areas','status','code']);
+  var d = readTab('deliveryAgents');
+  var last10 = String(a.phone).replace(/\D/g,'').slice(-10);
+  var ex = d.find(function(r){ return String(r.phone).replace(/\D/g,'').slice(-10) === last10; });
+  if (ex) return {id: ex.id, code: ex.code, status: ex.status, duplicate: true};
+  var id = 'AG' + Date.now();
+  var code = String(Math.floor(100000 + Math.random()*900000));
+  sh.appendRow([id, new Date().toISOString(), a.name, a.phone, a.vehicle||'Motorcycle',
+    a.plate||'', (a.areas||[]).join(', '), 'pending', code]);
+  var owner = cfg('OWNER_EMAIL');
+  if (owner) MailApp.sendEmail(owner, 'New NEXRICE delivery agent: ' + a.name,
+    a.name + ' (' + a.phone + ') · ' + (a.vehicle||'Motorcycle') + (a.plate?' · '+a.plate:'') +
+    '\nCoverage: ' + (a.areas||[]).join(', ') +
+    '\n\nApprove in the app: Distribute → Agents.');
+  smsSafe_(a.phone, 'NEXRICE: rider registration received. Your code is ' + code + '. You can start deliveries once approved.');
+  return {id: id, code: code, status: 'pending'};
+}
+function agentAuth_(phone, code){
+  var d = readTab('deliveryAgents');
+  var last10 = String(phone||'').replace(/\D/g,'').slice(-10);
+  var r = d.find(function(x){ return String(x.phone).replace(/\D/g,'').slice(-10) === last10; });
+  return !!(r && String(r.code) === String(code) && r.status === 'approved');
+}
+function agentLogin(phone, code){
+  var d = readTab('deliveryAgents');
+  var last10 = String(phone||'').replace(/\D/g,'').slice(-10);
+  var r = d.find(function(x){ return String(x.phone).replace(/\D/g,'').slice(-10) === last10; });
+  if (!r) return {agent: null};
+  if (String(r.code) !== String(code)) return {agent: null, error: 'Wrong code'};
+  return {agent: {id:r.id, name:r.name, phone:r.phone, vehicle:r.vehicle, plate:r.plate,
+    areas: r.areas ? String(r.areas).split(',').map(function(x){return x.trim();}) : [], status:r.status}};
+}
+function agentList(){
+  return readTab('deliveryAgents').map(function(r){
+    return {id:r.id, ts:r.ts, name:r.name, phone:r.phone, vehicle:r.vehicle, plate:r.plate,
+      areas:r.areas, status:r.status};
+  }).reverse();
+}
+function agentSetStatus(id, status){
+  var sh = SS.getSheetByName('DeliveryAgents');
+  if (!sh) throw new Error('no agents yet');
+  var vals = sh.getDataRange().getValues(), hdr = vals[0];
+  var iId = hdr.indexOf('id'), iSt = hdr.indexOf('status'), iPh = hdr.indexOf('phone'), iNm = hdr.indexOf('name');
+  for (var i=1;i<vals.length;i++){
+    if (vals[i][iId] === id){
+      sh.getRange(i+1, iSt+1).setValue(status);
+      if (status === 'approved') smsSafe_(vals[i][iPh], 'NEXRICE: you\u2019re approved to deliver, ' + vals[i][iNm] + '! Open the agent portal and log in to see deliveries.');
+      return {id: id, status: status};
+    }
+  }
+  throw new Error('agent not found');
+}
+function agentDeliveries(phone, code){
+  if (!agentAuth_(phone, code)) return {error: 'not approved or wrong code', deliveries: []};
+  var last10 = String(phone).replace(/\D/g,'').slice(-10);
+  var rows = readTab('shopOrders').filter(function(o){
+    return String(o.agent_phone||'').replace(/\D/g,'').slice(-10) === last10 &&
+      (o.status === 'preparing' || o.status === 'out');
+  });
+  return {deliveries: rows.map(function(o){
+    var items = []; try { items = JSON.parse(o.items || '[]'); } catch(e){}
+    return {order_no:o.order_no, name:o.name, phone:o.phone, area:o.area, address:o.address,
+      total:Number(o.total||0), payment_method:o.payment_method, status:o.status, items:items};
+  })};
+}
+function agentConfirm(p){
+  // The agent's own "I've delivered this" — it does NOT finalize the order.
+  // It timestamps the confirmation and notifies the owner; the sale is only
+  // booked when staff taps "Mark delivered" in NEXRICE, same as always, so
+  // accounting always has one source of truth.
+  if (!agentAuth_(p.phone, p.code)) throw new Error('not approved or wrong code');
+  var sh = SS.getSheetByName('ShopOrders');
+  if (!sh) throw new Error('no shop orders yet');
+  var vals = sh.getDataRange().getValues(), hdr = vals[0];
+  var iNo = hdr.indexOf('order_no'), iAgt = hdr.indexOf('agent_delivered_ts'), iNm = hdr.indexOf('name');
+  for (var i=1;i<vals.length;i++){
+    if (vals[i][iNo] === p.order){
+      if (iAgt >= 0) sh.getRange(i+1, iAgt+1).setValue(new Date().toISOString());
+      var owner = cfg('OWNER_EMAIL');
+      if (owner) MailApp.sendEmail(owner, 'Rider confirms delivery: ' + p.order,
+        'The assigned rider marked order ' + p.order + ' (' + vals[i][iNm] + ') as delivered.\nFinalize it in NEXRICE \u2192 Distribute \u2192 NEXSHOP to book the sale.');
+      return {confirmed: true};
+    }
+  }
+  throw new Error('order not found');
+}
+function shopAssignAgent(orderNo, agentId){
+  var agents = readTab('deliveryAgents'), a = agents.find(function(x){ return x.id === agentId; });
+  if (!a) throw new Error('agent not found');
+  var sh = SS.getSheetByName('ShopOrders');
+  if (!sh) throw new Error('no shop orders yet');
+  var vals = sh.getDataRange().getValues(), hdr = vals[0];
+  var iNo = hdr.indexOf('order_no'), iId = hdr.indexOf('agent_id'), iNm = hdr.indexOf('agent_name'), iPh = hdr.indexOf('agent_phone');
+  for (var i=1;i<vals.length;i++){
+    if (vals[i][iNo] === orderNo){
+      if (iId>=0) sh.getRange(i+1, iId+1).setValue(a.id);
+      if (iNm>=0) sh.getRange(i+1, iNm+1).setValue(a.name);
+      if (iPh>=0) sh.getRange(i+1, iPh+1).setValue(a.phone);
+      smsSafe_(a.phone, 'NEXRICE: you have a new delivery — order ' + orderNo + '. Open the agent portal to see the address.');
+      return {assigned: true, agent: a.name};
+    }
+  }
+  throw new Error('order not found');
+}
+function gpsLatest(dev){
+  var sh = SS.getSheetByName('GPSFeed');
+  if (!sh || sh.getLastRow() < 2) return null;
+  var last = sh.getLastRow(), n = Math.min(500, last - 1);
+  var d = sh.getRange(last - n + 1, 1, n, 6).getValues();
+  for (var i = d.length - 1; i >= 0; i--){
+    if (String(d[i][1]) === dev) return {ts:d[i][0], dev:d[i][1], lat:d[i][2], lon:d[i][3], spd:d[i][4], hdg:d[i][5]};
+  }
+  return null;
+}
+
 function shopTrack(orderNo, phone){
   var rows = readTab('shopOrders');
   var o = rows.find(function(r){ return r.order_no === String(orderNo || '').trim(); });
   if (!o) return {error: 'order not found', ok: false};
   var a = String(o.phone).replace(/\D/g,'').slice(-10), b = String(phone || '').replace(/\D/g,'').slice(-10);
   if (!b || a !== b) return {error: 'phone does not match', ok: false};
-  return {order: {order_no: o.order_no, ts: o.ts, status: o.status || 'placed',
+  var out = {order_no: o.order_no, ts: o.ts, status: o.status || 'placed',
     payment_method: o.payment_method, payment_status: o.payment_status,
     area: o.area, phone: o.phone, total: Number(o.total || 0),
-    items: (function(){ try { return JSON.parse(o.items || '[]'); } catch(e){ return []; } })()}};
+    items: (function(){ try { return JSON.parse(o.items || '[]'); } catch(e){ return []; } })()};
+  if (o.agent_phone){
+    var pos = gpsLatest('AGENT:' + o.agent_phone);
+    out.agent = {name: o.agent_name || '', phone: o.agent_phone,
+      lat: pos ? Number(pos.lat) : null, lon: pos ? Number(pos.lon) : null,
+      ts: pos ? pos.ts : null, delivered_ts: o.agent_delivered_ts || ''};
+  }
+  return {order: out};
 }
 
 function shopStatus(orderNo, status){
@@ -2955,7 +3386,78 @@ function shopStatus(orderNo, status){
   throw new Error('order not found');
 }
 
+/* ══════════════════════════════════════════════════════════════
+   LICENSING — cloud side
+   Config rows (all optional):
+     LICENSE_STATUS   → active | suspended     (suspended locks the app + storefront)
+     LICENSE_FEATURES → JSON overrides, e.g. {"cyra":false,"b2b":true}
+     LICENSE_MSG      → note shown to the user when suspended
+   generateLicense(): run from the Apps Script editor to mint keys.
+   ══════════════════════════════════════════════════════════════ */
+/* ══════════════ GPS FEED ══════════════
+   Any tracker that can call a URL works. Point the device (or its platform's
+   webhook/forwarding rule) at:
+     <your /exec URL>?action=gps&key=GPS_KEY&dev=IMEI&lat=..&lon=..&spd=..
+   POST form-encoded is preferred. Config row GPS_KEY sets the shared secret;
+   if absent the main API key is used.
+
+   SinoTrack ST-901/903 and Concox GT06 speak a raw TCP protocol, not HTTP —
+   they must report to their own platform first, then that platform forwards
+   here by webhook. Teltonika FMB series can POST HTTP directly over its
+   "HTTP/HTTPS data sending" profile. The driver-phone mode in the app posts
+   here natively.                                                            */
+function gpsWrite(p){
+  var sh = sheet('GPSFeed', ['ts','dev','lat','lon','spd','hdg','raw']);
+  sh.appendRow([p.ts || new Date().toISOString(), String(p.dev||'unknown'),
+                Number(p.lat||0), Number(p.lon||0), Number(p.spd||0), Number(p.hdg||0),
+                JSON.stringify(p).slice(0,400)]);
+  // keep the sheet from growing without bound
+  if (sh.getLastRow() > 5000) sh.deleteRows(2, 1000);
+  return {stored: true};
+}
+function gpsList(){
+  var sh = SS.getSheetByName('GPSFeed');
+  if (!sh || sh.getLastRow() < 2) return [];
+  var last = sh.getLastRow(), n = Math.min(200, last - 1);
+  var d = sh.getRange(last - n + 1, 1, n, 6).getValues();
+  // newest fix per device
+  var byDev = {};
+  d.forEach(function(r){ byDev[r[1]] = {ts:r[0], dev:r[1], lat:r[2], lon:r[3], spd:r[4], hdg:r[5]}; });
+  return Object.keys(byDev).map(function(k){ return byDev[k]; });
+}
+
+function licenseCheck(){
+  var feat = null;
+  try { feat = JSON.parse(cfg('LICENSE_FEATURES') || 'null'); } catch(e){}
+  return { status: (cfg('LICENSE_STATUS') || 'active').toLowerCase(),
+           features: feat, message: cfg('LICENSE_MSG') || '' };
+}
+function licenseSuspended_(){ return (cfg('LICENSE_STATUS') || 'active').toLowerCase() === 'suspended'; }
+
+/* Mint a key. Run from the editor: View > Logs shows the key.
+   ed: TRIAL | LITE | PRO | ENTERPRISE
+   days: 0 = perpetual · features: '' = edition defaults · site: '' = any install */
+function generateLicense(to, ed, days, features, site){
+  to = to || 'Customer'; ed = ed || 'PRO';
+  var p = { to: to, ed: ed,
+            exp: days ? Utilities.formatDate(new Date(Date.now() + days*864e5), 'GMT+8', 'yyyy-MM-dd') : '',
+            f: features ? String(features).split(',').map(function(x){return x.trim();}).filter(String) : [] };
+  if (site) p.site = String(site).toUpperCase();
+  var payload = Utilities.base64Encode(JSON.stringify(p)).replace(/\+/g,'-').replace(/\//g,'_');
+  var SECRET = 'NXA-' + ['c7','91','4e','d2','a8'].join('') + '-CYRABELL';
+  var dig = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, payload + SECRET);
+  var sig = dig.slice(0,6).map(function(b){ b = b < 0 ? b + 256 : b; return ('0'+b.toString(16)).slice(-2); }).join('');
+  var key = 'NEXR.' + payload + '.' + sig;
+  Logger.log('License for ' + to + ' (' + ed + (p.exp ? ', exp ' + p.exp : ', perpetual') + (site ? ', site ' + site : '') + '):\n' + key);
+  return key;
+}
+function generateLicense_example(){
+  // Edit and Run this, then open Executions/Logs for the key:
+  generateLicense('Aling Nena Sari-Sari', 'ENTERPRISE', 365, '', '');
+}
+
 function shopCatalog(){
+  if (licenseSuspended_()) return {products: [], suspended: true, error: 'Store temporarily offline'};
   var rows = readTab('products').filter(function(p){ return p.active !== false && p.active !== 'FALSE'; });
   return {products: rows.map(function(p){
     return {id: p.id, sku: p.id, name: p.name, category: p.cat || 'Rice',
@@ -2973,6 +3475,142 @@ function shopCatalog(){
 
 /* ── NEXSHOP v2 extras: vouchers · reviews · cancel · chat ─────────────── */
 /* Vouchers sheet: code | kind(fixed/pct/ship) | value | min | cap | label | desc | active */
+/* ══════════════ NEXSHOP B2B — trade accounts & tiers ══════════════
+   Retailers and distributors register from the storefront; they land in
+   the TradeAccounts sheet as "pending". You approve them and set a tier
+   from Customers/Distribution → Sales orders → Pricing. Approved accounts
+   are re-priced at their tier on every order (server-side, never trusted
+   to the browser).
+   TradeAccounts: id | ts | biz | type | name | phone | area | addr | permit | tier | status | code | addresses(JSON)
+   ================================================================== */
+/* ══════════════ NEXSHOP — Q&A · subscriptions · broadcasts ══════════════
+   ShopQnA:       id | ts | sku | name | q | a          (answer in col "a" —
+                  type your reply straight into the sheet; the storefront
+                  shows it under the question on next load)
+   Subscriptions: id | ts | phone | biz | sku | name | qty | freq | next | unit | active
+   Broadcasts:    ts | title | body | link              (add a row = push an
+                  update to every follower's bell)
+   Followers:     phone | on | ts
+   ======================================================================= */
+function shopQnaPost(p){
+  if (!p.sku || !p.q) throw new Error('sku and question required');
+  var sh = sheet('ShopQnA', ['id','ts','sku','name','q','a']);
+  sh.appendRow(['Q'+Date.now(), Date.now(), String(p.sku), String(p.name||'Buyer').slice(0,60), String(p.q).slice(0,400), '']);
+  var owner = cfg('OWNER_EMAIL');
+  if (owner) MailApp.sendEmail(owner, 'NEXSHOP question: ' + p.sku,
+    (p.name||'Buyer') + ' asks:\n\n' + p.q + '\n\nReply by typing your answer in the "a" column of the ShopQnA sheet.');
+  return {posted: true};
+}
+function shopQnaList(){
+  var sh = SS.getSheetByName('ShopQnA');
+  if (!sh || sh.getLastRow() < 2) return [];
+  var d = readTab('shopQnA');
+  return d.slice(-200).map(function(r){ return {sku:r.sku, name:r.name, q:r.q, a:r.a||'', ts:Number(r.ts)||0}; });
+}
+function shopSubscribe(p){
+  if (!p.sku) throw new Error('sku required');
+  var sh = sheet('Subscriptions', ['id','ts','phone','biz','sku','name','qty','freq','next','unit','active']);
+  sh.appendRow([p.id||('SUB'+Date.now()), new Date().toISOString(), String(p.phone||''), String(p.biz||''),
+    String(p.sku), String(p.name||''), Number(p.qty||1), String(p.freq||'monthly'),
+    String(p.next||''), Number(p.unit||0), p.active === false ? 'no' : 'yes']);
+  var owner = cfg('OWNER_EMAIL');
+  if (owner) MailApp.sendEmail(owner, 'NEXSHOP subscription: ' + (p.name||p.sku),
+    (p.biz||p.phone||'A buyer') + ' subscribed: ' + (p.qty||1) + ' sack(s) ' + (p.freq||'monthly') +
+    ', first delivery ' + (p.next||'—') + '. Schedule the recurring delivery from the Subscriptions sheet.');
+  return {stored: true};
+}
+function shopBroadcasts(){
+  var sh = SS.getSheetByName('Broadcasts');
+  if (!sh || sh.getLastRow() < 2) return [];
+  var d = readTab('broadcasts');
+  return d.slice(-30).map(function(r){
+    var t = r.ts; var ts = (t && !isNaN(Number(t))) ? Number(t) : (t ? new Date(t).getTime() : Date.now());
+    return {ts: ts, title: String(r.title||''), body: String(r.body||''), link: String(r.link||'')};
+  });
+}
+function shopFollow(p){
+  var sh = sheet('Followers', ['phone','on','ts']);
+  var last10 = String(p.phone||'').replace(/\D/g,'').slice(-10);
+  if (!last10) return {stored: false};
+  var vals = sh.getDataRange().getValues();
+  for (var i = 1; i < vals.length; i++){
+    if (String(vals[i][0]).replace(/\D/g,'').slice(-10) === last10){
+      sh.getRange(i+1, 2, 1, 2).setValues([[p.on ? 'yes' : 'no', new Date().toISOString()]]);
+      return {stored: true};
+    }
+  }
+  sh.appendRow([String(p.phone), p.on ? 'yes' : 'no', new Date().toISOString()]);
+  return {stored: true};
+}
+
+function shopTiers(){
+  // mirror the app's default tiers; override from a Tiers sheet if present
+  var tiers = [
+    {id:'T1', name:'Retail',        pct:0,   min:1},
+    {id:'T2', name:'Wholesale',     pct:4,   min:20},
+    {id:'T3', name:'Distributor',   pct:7.5, min:100},
+    {id:'T4', name:'Institutional', pct:5,   min:50}
+  ];
+  var breaks = [{qty:50,pct:1.5},{qty:150,pct:3},{qty:300,pct:5}];
+  var sh = SS.getSheetByName('Tiers');
+  if (sh && sh.getLastRow() > 1){
+    var rows = readTab('tiers');
+    if (rows.length) tiers = rows.map(function(r){ return {id:r.id, name:r.name, pct:Number(r.pct||0), min:Number(r.min||1)}; });
+  }
+  return {tiers: tiers, breaks: breaks};
+}
+function shopRegister(a){
+  if (!a.biz || !a.phone) throw new Error('Business name and phone are required');
+  var sh = sheet('TradeAccounts', ['id','ts','biz','type','name','phone','area','addr','permit','tier','status','code','addresses']);
+  // one account per phone
+  var d = readTab('tradeAccounts');
+  var ex = d.find(function(r){ return String(r.phone).replace(/\D/g,'').slice(-10) === String(a.phone).replace(/\D/g,'').slice(-10); });
+  if (ex) return {id: ex.id, code: ex.code, status: ex.status, tier: ex.tier, duplicate: true};
+  var id = 'TA' + Date.now();
+  var code = String(Math.floor(100000 + Math.random()*900000));    // 6-digit login code
+  sh.appendRow([id, new Date().toISOString(), a.biz, a.type||'retailer', a.name||'', a.phone,
+    a.area||'', a.addr||'', a.permit||'', 'T1', 'pending', code, JSON.stringify(a.addresses||[])]);
+  var owner = cfg('OWNER_EMAIL');
+  if (owner) MailApp.sendEmail(owner, 'New NEXSHOP trade account: ' + a.biz,
+    a.type + ' — ' + a.name + ' (' + a.phone + ')\n' + (a.addr||'') + ', ' + (a.area||'') +
+    '\nPermit: ' + (a.permit||'none') + '\n\nApprove & set a tier in the Customers sheet: set status=approved and tier=T2/T3/T4.');
+  // SMS the code if Semaphore is configured
+  smsSafe_(a.phone, 'NEXSHOP: registration received for ' + a.biz + '. Your account code is ' + code + '. Trade prices unlock once approved.');
+  return {id: id, code: code, status: 'pending', tier: 'T1'};
+}
+function shopAccount(phone, code){
+  var d = readTab('tradeAccounts');
+  var last10 = String(phone||'').replace(/\D/g,'').slice(-10);
+  var r = d.find(function(x){ return String(x.phone).replace(/\D/g,'').slice(-10) === last10; });
+  if (!r) return {account: null};
+  if (code && String(r.code) !== String(code)) return {account: null, error: 'Wrong account code'};
+  var addresses = [];
+  try { addresses = JSON.parse(r.addresses || '[]'); } catch(e){}
+  return {account: {id:r.id, biz:r.biz, type:r.type, name:r.name, phone:r.phone, area:r.area, addr:r.addr,
+    tier:r.tier || 'T1', status:r.status || 'pending', code:r.code, addresses:addresses}};
+}
+function shopAccountUpdate(a){
+  var sh = SS.getSheetByName('TradeAccounts');
+  if (!sh) throw new Error('no accounts');
+  var vals = sh.getDataRange().getValues(), hdr = vals[0];
+  var iPh = hdr.indexOf('phone'), iCode = hdr.indexOf('code'), iAddr = hdr.indexOf('addresses');
+  var last10 = String(a.phone||'').replace(/\D/g,'').slice(-10);
+  for (var i=1;i<vals.length;i++){
+    if (String(vals[i][iPh]).replace(/\D/g,'').slice(-10) === last10 && String(vals[i][iCode]) === String(a.code)){
+      if (a.addresses) sh.getRange(i+1, iAddr+1).setValue(JSON.stringify(a.addresses));
+      return {updated: true};
+    }
+  }
+  throw new Error('account not found');
+}
+function smsSafe_(to, msg){
+  try {
+    var key = cfg('SEMAPHORE_KEY'); if (!key || !to) return;
+    UrlFetchApp.fetch('https://api.semaphore.co/api/v4/messages', {method:'post', muteHttpExceptions:true,
+      payload:{apikey:key, number:String(to), message:msg, sendername:(cfg('SEMAPHORE_SENDER')||'NEXRICE')}});
+  } catch(e){}
+}
+
 function shopVouchers(){
   var sh = sheet('Vouchers', ['code','kind','value','min','cap','label','desc','active']);
   if (sh.getLastRow() < 2){
@@ -3660,14 +4298,43 @@ function ensureChannel() {
 /* ── Dual ledger: our Sheet + their Sheet + shared log ── */
 async function tradeLog(deal, ev, note, dir) {
   ensureChannel();
+  if (!lic('b2b')) { toast('🔒 NEXMART B2B Link requires an ENTERPRISE license.'); throw new Error('b2b locked'); }
   const e = {id: uid('t'), ts: new Date().toISOString(), deal: deal.id, ref: deal.ref || '',
              ev, note, dir, by: ME ? ME.u : 'system'};
+  // Traceability: every outbound event records whether NEXMART actually received it.
+  const sent = await postToNexmart(ev, deal, note);
+  e.relay = dir === 'mart' && ev.startsWith('pr.') ? 'in'          // inbound events aren't relayed back
+          : !S.cfg.gas ? 'local'                                    // no backend configured
+          : sent ? 'ok' : 'fail';
   S.tradelog.unshift(e);
   if (S.tradelog.length > 400) S.tradelog.pop();
   enqueue('tradelog', e);
-  await postToNexmart(ev, deal, note);
   save();
 }
+
+/* Re-push a single failed event to NEXMART */
+window.resendTrade = async tid => {
+  const e = S.tradelog.find(x => x.id === tid); if (!e) return;
+  const d = S.deals.find(x => x.id === e.deal); if (!d) return toast('Deal not found.');
+  toast('Resending ' + e.ev + '…');
+  const sent = await postToNexmart(e.ev, d, e.note);
+  e.relay = sent ? 'ok' : 'fail';
+  enqueue('tradelog', e); save();
+  toast(sent ? '✓ NEXMART received ' + e.ev : 'Still unreachable — check NEXMART_URL / TRADE_KEY in the Config sheet.');
+  dealSheet(d.id);
+};
+
+/* Re-sync the deal's CURRENT stage to NEXMART (manual trigger when they missed it) */
+window.resyncDeal = async id => {
+  const d = S.deals.find(x => x.id === id); if (!d) return;
+  await tradeLog(d, 'stage.' + d.stage + '.resync', 'Manual re-sync: ' + SG(d.stage).l, 'rice');
+  await audit('nexmart.resync', {deal: d.id, stage: d.stage});
+  const last = S.tradelog[0];
+  toast(last.relay === 'ok' ? '✓ NEXMART re-synced to “' + SG(d.stage).l + '”'
+      : last.relay === 'local' ? 'Logged locally — connect a backend to reach NEXMART'
+      : 'NEXMART unreachable — event logged, resend from the trace below.');
+  dealSheet(id);
+};
 async function postToNexmart(ev, deal, note) {
   ensureChannel();
   if (!S.cfg.gas || !navigator.onLine) return false;
@@ -3847,7 +4514,7 @@ function renderNxm() {
     const s = SG(d.stage), i = SGI(d.stage);
     return `<div class="item">
       <div class="swatch">${i+1}</div>
-      <div class="g"><b>${d.id} · ${d.ref}</b>
+      <div class="g"><b>${d.id} · ${d.ref}${S.tradelog.some(t=>t.deal===d.id&&t.relay==='fail')?' <span class="relaydot fail" title="undelivered events"></span>':''}</b>
         <small>${d.sacks} sacks · ${d.total?Pk(d.total):'not yet quoted'}${d.paid?' · paid '+Pk(d.paid):''}</small>
         <div class="bar"><i style="width:${(i+1)/STAGES.length*100}%"></i></div></div>
       <span class="who ${s.by==='rice'?'rice':'mart'}">${s.by==='both'?'closed':s.by}</span>
@@ -3862,6 +4529,78 @@ function renderNxm() {
   </div>`).join('') || '<div class="empty">Nothing has crossed the wire yet.</div>';
 }
 window.nxAuto = k => { ensureChannel(); S.channel.auto[k] = !S.channel.auto[k]; save(); renderNxm(); };
+
+/* ── B2B document previews — PR · Quotation · PO · DR ── */
+function docHtml(d, type){
+  ensureChannel();
+  const c = S.customers.find(x => x.id === d.custId);
+  const partner = (c && c.name) || 'NEXMART Retail';
+  const biz = (S.cfg.biz && S.cfg.biz.name) || 'NEXRICE Grains Trading';
+  const dt = ts => ts ? new Date(ts).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : '—';
+  const created = d.history && d.history[0] ? d.history[0].ts : d.ts;
+  const quoteTs = (d.history || []).find(h => h.stage === 'QUOTE');
+  const poTs    = (d.history || []).find(h => h.stage === 'PO');
+  const drTs    = (d.history || []).find(h => h.stage === 'DISPATCH');
+  const priced  = SGI(d.stage) >= SGI('QUOTE') && d.total;
+  const rows = (d.lines || []).map(l => `<tr><td>${l.name}</td><td class="num">${l.qty}</td>
+      ${priced && type !== 'PR' ? `<td class="num">${Pk(l.price||0)}</td><td class="num">${Pk(l.qty*(l.price||0))}</td>` : ''}</tr>`).join('');
+  const priceHead = priced && type !== 'PR' ? '<th class="num">Unit price</th><th class="num">Amount</th>' : '';
+  const totRow = priced && type !== 'PR'
+    ? `<tr><td><b>TOTAL</b></td><td class="num"><b>${d.sacks}</b></td><td></td><td class="num"><b>${Pk(d.total)}</b></td></tr>` : '';
+  const M = {
+    PR: {title:'PURCHASE REQUEST', no:d.ref, from:partner, to:biz, date:dt(created),
+         foot:'Request raised by ' + partner + ' via the NEXMART B2B channel. Quantities in sacks. Pricing to follow by quotation.'},
+    QUOTE: {title:'QUOTATION', no:d.quote || ('QT-' + d.id), from:biz, to:partner, date:dt(quoteTs && quoteTs.ts),
+         foot:'Validity: ' + (S.channel.valid || 7) + ' days from date. Downpayment ' + (d.dpPct || S.channel.dp || 50) + '% to begin preparation, balance on delivery. Stock allocated FEFO — oldest milled lots first. Prices VAT-exempt (rice, NIRC Sec. 109(A)).'},
+    PO: {title:'PURCHASE ORDER', no:d.po || ('PO-' + d.id), from:partner, to:biz, date:dt(poTs && poTs.ts),
+         foot:'Purchase order issued against quotation ' + (d.quote || '—') + '. Payment mode: ' + (d.payMode || 'downpayment ' + (d.dpPct||50) + '% + balance on delivery') + '.'},
+    DR: {title:'DELIVERY RECEIPT', no:d.dr || ('DR-' + d.id), from:biz, to:partner, date:dt(drTs && drTs.ts),
+         foot:'Received the above goods in full and good condition.<br><br>Received by: ______________________&nbsp;&nbsp;&nbsp;Date: ____________'}
+  }[type];
+  return `<div class="docpaper" id="docPaper">
+    <div class="dochead">
+      <div style="display:flex;gap:10px;align-items:center"><div class="dochex"></div>
+        <div><h4>${M.from}</h4><div style="font-size:10px;color:#5A6B84;letter-spacing:.08em">PRECISION · SCALE · CONTROL</div></div></div>
+      <div class="docmeta"><b style="color:#0A1F44;font-size:13px">${M.title}</b><br>No. ${M.no}<br>Date: ${M.date}</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px">
+      <div><span style="color:#5A6B84;font-size:10px;letter-spacing:.1em">${type==='PR'||type==='PO'?'TO':'FOR'}</span><br><b>${M.to}</b></div>
+      <div style="text-align:right"><span style="color:#5A6B84;font-size:10px;letter-spacing:.1em">DEAL</span><br><b>${d.id} · ${d.ref}</b></div>
+    </div>
+    <table><thead><tr><th>Variety</th><th class="num">Sacks</th>${priceHead}</tr></thead>
+      <tbody>${rows}</tbody>${totRow?`<tfoot>${totRow}</tfoot>`:''}</table>
+    ${type==='QUOTE'&&d.total?`<div style="text-align:right;font-size:11.5px">Downpayment (${d.dpPct||S.channel.dp||50}%): <b class="num">${Pk(d.total*(d.dpPct||S.channel.dp||50)/100)}</b></div>`:''}
+    ${type==='PO'&&d.paid?`<div style="text-align:right;font-size:11.5px">Paid to date: <b class="num">${Pk(d.paid)}</b> · Balance: <b class="num">${Pk(Math.max(0,d.total-d.paid))}</b></div>`:''}
+    <div class="docfoot">${M.foot}</div>
+  </div>`;
+}
+window.docPreview = (id, type) => {
+  const d = S.deals.find(x => x.id === id); if (!d) return;
+  sheet(`<h2 class="sec">${{PR:'Purchase Request',QUOTE:'Quotation',PO:'Purchase Order',DR:'Delivery Receipt'}[type]}
+      <span class="spacer"></span>
+      <button class="btn sm" onclick="dealSheet('${id}')">‹ Back</button>
+      <button class="btn sm pri" onclick="printDoc()">🖨 Print / PDF</button></h2>
+    ${docHtml(d, type)}
+    <p class="muted" style="margin-top:10px;font-size:11px">Print opens your device's print dialog — choose "Save as PDF" to keep a copy or send it to NEXMART.</p>`);
+};
+window.printDoc = () => {
+  const paper = document.getElementById('docPaper'); if (!paper) return;
+  const w = open('', '_blank');
+  if (!w) return toast('Allow pop-ups to print.');
+  w.document.write('<html><head><title>NEXRICE document</title><style>' +
+    'body{font-family:Inter,Arial,sans-serif;margin:24px;color:#16233B}' +
+    'h4{font-family:"Chakra Petch",Arial;letter-spacing:.06em;color:#0A1F44;margin:0}' +
+    'table{width:100%;border-collapse:collapse;margin:10px 0}' +
+    'th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#5A6B84;border-bottom:1.5px solid #D5DEEA;padding:5px 6px}' +
+    'td{padding:6px;border-bottom:1px solid #EDF1F7}.num{text-align:right;font-family:monospace}' +
+    '.dochead{display:flex;justify-content:space-between;border-bottom:3px solid #0A1F44;padding-bottom:10px;margin-bottom:12px}' +
+    '.dochex{width:26px;height:30px;background:#00B8D9;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}' +
+    '.docmeta{font-family:monospace;font-size:10.5px;color:#5A6B84;text-align:right;line-height:1.7}' +
+    '.docfoot{margin-top:14px;padding-top:10px;border-top:1.5px dashed #D5DEEA;font-size:10.5px;color:#5A6B84}' +
+    '</style></head><body>' + paper.innerHTML + '</body></html>');
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 250);
+};
 
 window.dealSheet = id => {
   const d = S.deals.find(x => x.id === id);
@@ -3900,7 +4639,26 @@ window.dealSheet = id => {
         <b>${st.l} <span class="who ${st.by==='rice'?'rice':'mart'}">${st.by==='both'?'both':st.by}</span></b>
         <small>${h ? new Date(h.ts).toLocaleString('en-PH') : 'pending'}</small></div>`;
     }).join('')}</div>
-    ${a[1] ? `<div class="ai-note"><b>Next</b>${a[1]}</div>` : ''}
+    <h2 class="sec" style="margin-top:16px">Documents</h2>
+    <div class="docbtns">
+      <button class="btn sm" onclick="docPreview('${d.id}','PR')">📄 PR ${d.ref}</button>
+      ${SGI(d.stage) >= SGI('QUOTE') && d.total ? `<button class="btn sm" onclick="docPreview('${d.id}','QUOTE')">📄 Quotation ${d.quote||''}</button>` : `<button class="btn sm" disabled style="opacity:.4">Quotation — after pricing</button>`}
+      ${d.po || SGI(d.stage) >= SGI('PO') ? `<button class="btn sm" onclick="docPreview('${d.id}','PO')">📄 PO ${d.po||''}</button>` : `<button class="btn sm" disabled style="opacity:.4">PO — awaiting NEXMART</button>`}
+      ${d.dr || SGI(d.stage) >= SGI('DISPATCH') ? `<button class="btn sm" onclick="docPreview('${d.id}','DR')">📄 DR ${d.dr||''}</button>` : ''}
+    </div>
+    <h2 class="sec" style="margin-top:14px">Trace — what NEXMART received</h2>
+    ${(() => {
+      const tr = S.tradelog.filter(t => t.deal === d.id).slice(0, 12);
+      const fails = tr.filter(t => t.relay === 'fail').length;
+      return (fails ? `<div class="ai-note" style="border-left-color:var(--red,#E5484D)"><b>${fails} event(s) not received</b>NEXMART did not acknowledge these relays. Resend them below, or use Re-sync to push the current stage.</div>` : '') +
+      (tr.length ? tr.map(t => `<div class="item" style="padding:7px 10px">
+        <span class="relaydot ${t.relay||'local'}" title="${t.relay==='ok'?'received by NEXMART':t.relay==='fail'?'NOT received':t.relay==='in'?'inbound from NEXMART':'logged locally'}"></span>
+        <div class="g"><b style="font-size:12px">${t.ev}</b><small>${new Date(t.ts).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · ${t.by} · ${t.relay==='ok'?'✓ received':t.relay==='fail'?'✗ not received':t.relay==='in'?'← from NEXMART':'local only'}</small></div>
+        ${t.relay==='fail' ? `<button class="btn sm acc" onclick="resendTrade('${t.id}')">Resend</button>` : ''}
+      </div>`).join('') : '<div class="empty">No trace entries yet for this deal.</div>');
+    })()}
+    <button class="btn w" style="margin-top:10px;border:1px solid var(--line-2)" onclick="resyncDeal('${d.id}')">⟳ Re-sync current stage to NEXMART</button>
+    ${a[1] ? `<div class="ai-note" style="margin-top:12px"><b>Next</b>${a[1]}</div>` : ''}
     ${a[0] ? `<button class="btn pri w" style="margin-top:10px" onclick="closeSheet();advance('${d.id}')">${a[0]}</button>` : ''}
     ${d.stage==='PAY' ? `<button class="btn acc w" style="margin-top:8px" onclick="closeSheet();advance('${d.id}',{amount:${d.total}})">Post FULL payment (${Pk(d.total)})</button>` : ''}
   `);
@@ -4003,6 +4761,21 @@ $('#shopSim').onclick = () => {
 
 window.shopAdvance = async no => {
   ensureShop();
+  if (!lic('shop')) return toast('🔒 NEXSHOP fulfilment requires an ENTERPRISE license.');
+  const o = S.shopOrders.find(x => x.order_no === no);
+  const i = SHOP_FLOW.indexOf(o.status);
+  if (i >= SHOP_FLOW.length - 1) return;
+  const to = SHOP_FLOW[i + 1];
+  // Going out for delivery: pick a rider first (unless one is already on the
+  // order, or there simply are none yet — never block dispatch on staffing).
+  if (to === 'out' && !o.agent_id) {
+    const approved = (S.agents || []).filter(a => a.status === 'approved');
+    if (approved.length) return agentPickForOrder(no);
+  }
+  return doShopAdvance(no);
+};
+async function doShopAdvance(no) {
+  ensureShop();
   const o = S.shopOrders.find(x => x.order_no === no);
   const i = SHOP_FLOW.indexOf(o.status);
   if (i >= SHOP_FLOW.length - 1) return;
@@ -4062,6 +4835,91 @@ window.shopAdvance = async no => {
   toast(no + ' → ' + to);
 };
 
+window.agentPickForOrder = no => {
+  const o = S.shopOrders.find(x => x.order_no === no);
+  const approved = (S.agents || []).filter(a => a.status === 'approved');
+  sheet(`<h2 class="sec">Assign a rider — ${no}</h2>
+    <p class="muted" style="margin:-6px 0 10px">${o.area} · ${o.items.reduce((a,i)=>a+i.qty,0)} item(s) · ${Pk(o.total)}</p>
+    ${approved.map(a => `<div class="item" onclick="agentAssignAndSend('${no}','${a.id}')">
+      <span class="tag ${((a.areas||'').includes(o.area))?'t-ok':'t-dim'}">${esc(a.vehicle)}</span>
+      <div class="g"><b>${esc(a.name)}</b><small>${esc(a.areas||'all areas')}${a.plate?' · '+esc(a.plate):''}</small></div>
+      <span class="go">›</span></div>`).join('')}
+    <button class="btn w" style="margin-top:10px" onclick="doShopAdvance('${no}');closeSheet()">Skip — dispatch without a rider</button>`);
+};
+window.agentAssignAndSend = async (no, agentId) => {
+  const o = S.shopOrders.find(x => x.order_no === no), a = (S.agents || []).find(x => x.id === agentId);
+  if (!a) return;
+  o.agent_id = a.id; o.agent_name = a.name; o.agent_phone = a.phone;
+  if (S.cfg.gas && navigator.onLine) {
+    try {
+      await fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({action:'shop_assign_agent', key:S.cfg.key, order:no, agent_id:a.id})});
+    } catch(e) {}
+  }
+  await audit('shop.agent_assign', {order:no, agent:a.name});
+  closeSheet();
+  toast('Assigned to ' + a.name);
+  doShopAdvance(no);
+};
+
+/* ── staff-side agent roster: approve / suspend, pulled from the Sheet ── */
+function ensureAgents(){ if (!S.agents) S.agents = []; }
+$('#agentRefreshBtn').onclick = async () => {
+  ensureAgents();
+  if (!S.cfg.gas) return toast('Configure the backend first — Admin → Backend.');
+  try {
+    const r = await fetch(S.cfg.gas + '?action=agent_list&key=' + encodeURIComponent(S.cfg.key));
+    const j = await r.json();
+    if (!j.ok) return toast('Sheet rejected the pull.');
+    S.agents = j.agents || [];
+    save(); renderAgents();
+    toast(S.agents.length + ' rider(s) synced');
+  } catch (e) { toast('Pull failed — offline?'); }
+};
+function renderAgents(){
+  ensureAgents();
+  const approved = S.agents.filter(a => a.status === 'approved');
+  const pending = S.agents.filter(a => a.status === 'pending');
+  $('#agN').textContent = approved.length;
+  $('#agAreas').textContent = [...new Set(approved.flatMap(a => (a.areas||'').split(',').map(x=>x.trim()).filter(Boolean)))].slice(0,3).join(', ') || '—';
+  $('#agPend').textContent = pending.length;
+  $('#agOut').textContent = (S.shopOrders||[]).filter(o => o.status === 'out' && o.agent_id).length;
+  const row = a => `<div class="item">
+    <span class="tag ${a.status==='approved'?'t-ok':a.status==='pending'?'t-warn':'t-dim'}">${esc(a.vehicle||'')}</span>
+    <div class="g"><b>${esc(a.name)}</b><small>${esc(a.phone)}${a.plate?' · '+esc(a.plate):''} · ${esc(a.areas||'no areas set')}</small></div>
+    ${a.status==='pending'
+      ? `<button class="btn sm pri" onclick="agentApprove('${a.id}')">Approve</button>`
+      : `<button class="btn sm" onclick="agentSuspend('${a.id}')">${a.status==='approved'?'Suspend':'Reinstate'}</button>`}
+  </div>`;
+  $('#agList').innerHTML = S.agents.length
+    ? pending.map(row).join('') + S.agents.filter(a=>a.status!=='pending').map(row).join('')
+    : `<div class="empty">No riders yet — tap Refresh once one registers from the login screen, or share the app link with your delivery team.</div>`;
+}
+window.agentApprove = async id => {
+  const a = S.agents.find(x => x.id === id); a.status = 'approved';
+  if (S.cfg.gas && navigator.onLine) {
+    try {
+      await fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({action:'agent_set_status', key:S.cfg.key, id, status:'approved'})});
+    } catch(e) {}
+  }
+  await audit('agent.approve', {id, name:a.name});
+  save(); renderAgents(); toast(a.name + ' approved');
+};
+window.agentSuspend = async id => {
+  const a = S.agents.find(x => x.id === id);
+  const to = a.status === 'approved' ? 'suspended' : 'approved';
+  a.status = to;
+  if (S.cfg.gas && navigator.onLine) {
+    try {
+      await fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({action:'agent_set_status', key:S.cfg.key, id, status:to})});
+    } catch(e) {}
+  }
+  await audit('agent.status', {id, name:a.name, to});
+  save(); renderAgents(); toast(a.name + ' → ' + to);
+};
+
 function renderShop() {
   ensureShop();
   const open = S.shopOrders.filter(o => !['delivered'].includes(o.status));
@@ -4089,13 +4947,1664 @@ function renderShop() {
     : '<div class="empty">No shop orders yet. Pull from the Sheet, or simulate one to see the flow.</div>';
 }
 
+
+/* ════════════════ LICENSING ════════════════
+   Offline: signed keys validate on-device (deterrent-grade signing —
+   the real teeth are the cloud controls). Cloud: the Config sheet can
+   suspend the install or override features remotely.               */
+const LIC = {
+  SECRET: 'NXA-' + ['c7','91','4e','d2','a8'].join('') + '-CYRABELL',   // shared with the GAS generator
+  EDITIONS: {
+    TRIAL:      ['pos','inventory','distribute','b2b','shop','cyra','reports','notify'],
+    LITE:       ['pos','inventory'],
+    PRO:        ['pos','inventory','distribute','reports','notify'],
+    ENTERPRISE: ['pos','inventory','distribute','b2b','shop','cyra','reports','notify']
+  },
+  FEATNAMES: {pos:'POS', inventory:'Inventory', distribute:'Distribution', b2b:'NEXMART B2B Link',
+              shop:'NEXSHOP fulfilment', cyra:'CYRA AI', reports:'Reports & BI', notify:'Notifications'},
+  VIEWFEAT: {pos:'pos', inv:'inventory', dist:'distribute', chain:'distribute', cyra:'cyra', bi:'reports'}
+};
+function licSite(){
+  if (!S.cfg.site) { S.cfg.site = Math.random().toString(36).slice(2,8).toUpperCase(); save(); }
+  return S.cfg.site;
+}
+async function licSig(payload){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload + LIC.SECRET));
+  return [...new Uint8Array(buf)].slice(0,6).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function licParse(key){
+  try{
+    const m = String(key||'').trim().replace(/\s+/g,'').match(/^NEXR\.([A-Za-z0-9+/=_-]+)\.([0-9a-f]{12})$/);
+    if (!m) return null;
+    if (await licSig(m[1]) !== m[2]) return null;
+    const p = JSON.parse(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')));
+    if (p.site && p.site !== licSite()) return {err:'This key is bound to site ' + p.site + ' — this install is ' + licSite() + '.'};
+    if (p.exp && new Date(p.exp) < new Date()) return {err:'This key expired on ' + p.exp + '.'};
+    return p;   // {to, ed, exp, f:[...], site?}
+  }catch(e){ return null; }
+}
+function ensureLic(){
+  if (!S.lic){
+    const exp = new Date(Date.now() + 14*864e5).toISOString().slice(0,10);
+    S.lic = {ed:'TRIAL', to:'Trial user', exp, f: LIC.EDITIONS.TRIAL.slice(), cloud:'unchecked', over:null};
+    save();
+  }
+  // trial expiry -> LITE
+  if (S.lic.ed === 'TRIAL' && S.lic.exp && new Date(S.lic.exp) < new Date() && !S.lic.lapsed){
+    S.lic.lapsed = true; S.lic.f = LIC.EDITIONS.LITE.slice(); save();
+  }
+}
+function lic(f){
+  ensureLic();
+  if (S.lic.cloud === 'suspended') return false;
+  const base = (S.lic.f || []).includes(f);
+  if (S.lic.over && f in S.lic.over) return !!S.lic.over[f];   // cloud override wins
+  return base;
+}
+window.lic = lic;
+
+/* Cloud verdict — pulled on boot & sync when a backend is configured */
+async function licCloudCheck(){
+  ensureLic();
+  if (!S.cfg.gas || !navigator.onLine) return;
+  try{
+    const r = await fetch(S.cfg.gas + '?action=license_check&key=' + encodeURIComponent(S.cfg.key));
+    const j = await r.json();
+    if (!j.ok) return;
+    S.lic.cloud = j.status || 'active';
+    S.lic.over  = j.features || null;
+    S.lic.cloudMsg = j.message || '';
+    S.lic.cloudTs = new Date().toISOString();
+    save();
+    if (S.lic.cloud === 'suspended') { toast('License suspended by the cloud backend.'); render(); }
+  }catch(e){}
+}
+
+function renderLic(){
+  ensureLic();
+  const L = S.lic;
+  const days = L.exp ? Math.ceil((new Date(L.exp) - new Date())/864e5) : null;
+  $('#licEd').textContent = L.ed;
+  $('#licTo').textContent = L.to || '—';
+  $('#licExp').textContent = L.exp || 'perpetual';
+  $('#licDays').textContent = days === null ? 'no expiry' : days > 0 ? days + ' day(s) left' : 'EXPIRED';
+  $('#licCloud').textContent = !S.cfg.gas ? 'local' : L.cloud;
+  $('#licCloud').style.color = L.cloud === 'suspended' ? 'var(--red,#E5484D)' : '';
+  $('#licBadge').innerHTML = L.cloud === 'suspended'
+    ? '<span class="tag t-warn">SUSPENDED</span>'
+    : (days !== null && days <= 0 ? '<span class="tag t-warn">EXPIRED → LITE</span>' : '<span class="tag t-ok">' + L.ed + ' active</span>');
+  $('#licFeat').innerHTML = Object.keys(LIC.FEATNAMES).map(f => {
+    const on = lic(f), overridden = L.over && f in L.over;
+    return `<span class="tag ${on?'t-ok':'t-dim'}" title="${overridden?'set by cloud override':''}">${on?'✓':'✗'} ${LIC.FEATNAMES[f]}${overridden?' ☁':''}</span>`;
+  }).join('');
+  $('#licSite').textContent = licSite();
+}
+$('#licApply').onclick = async () => {
+  const p = await licParse($('#licKey').value);
+  if (!p) return toast('Invalid key — check for missing characters.');
+  if (p.err) return toast(p.err);
+  S.lic = {ed: p.ed || 'PRO', to: p.to || '', exp: p.exp || '',
+           f: (p.f && p.f.length ? p.f : LIC.EDITIONS[p.ed] || LIC.EDITIONS.PRO).slice(),
+           cloud: S.lic ? S.lic.cloud : 'unchecked', over: S.lic ? S.lic.over : null};
+  save();
+  await audit('license.activate', {ed: S.lic.ed, to: S.lic.to, exp: S.lic.exp});
+  toast('✓ ' + S.lic.ed + ' activated for ' + (S.lic.to || 'this site'));
+  renderLic(); render();
+};
+$('#licTrial').onclick = async () => {
+  if (S.lic && S.lic.ed !== 'TRIAL' && S.lic.ed !== 'LITE') return toast('A full license is already active.');
+  S.lic = null; ensureLic();
+  await audit('license.trial', {});
+  toast('14-day trial started — all features on.');
+  renderLic(); render();
+};
+$('#licClear').onclick = async () => {
+  S.lic = {ed:'LITE', to:'', exp:'', f: LIC.EDITIONS.LITE.slice(), cloud: S.lic?S.lic.cloud:'unchecked', over:S.lic?S.lic.over:null, lapsed:true};
+  save(); await audit('license.deactivate', {});
+  toast('Deactivated — running LITE (POS + Inventory).');
+  renderLic(); render();
+};
+
+/* ════════════════════════════════════════════════════════════════
+   SUPPLY CHAIN — overseas suppliers · importation · unloading ·
+   transport (GPS) · warehouse management
+   ════════════════════════════════════════════════════════════════ */
+const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IMPSTAGES = [
+  ['PO',      'PO issued',            'Purchase order sent to the supplier'],
+  ['PI',      'Proforma / LC',        'Proforma invoice signed, letter of credit or TT arranged'],
+  ['LOADED',  'Loaded & sailed',      'Containers stuffed, Bill of Lading issued, vessel departed'],
+  ['TRANSIT', 'In transit',           'On the water — watch the ETA'],
+  ['ARRIVED', 'Arrived at port',      'Vessel berthed, containers discharged to the yard'],
+  ['CUSTOMS', 'Customs clearance',    'Entry lodged with BOC, duties assessed and paid'],
+  ['RELEASED','Released from port',   'Gate pass issued, trucking booked'],
+  ['RECEIVED','Received in warehouse','Unloaded, tallied and put away']
+];
+const IMPI = k => IMPSTAGES.findIndex(s => s[0] === k);
+const IMPG = k => { const s = IMPSTAGES.find(x => x[0] === k) || IMPSTAGES[0]; return {k:s[0], l:s[1], d:s[2]}; };
+const IMPDOCS = ['Commercial Invoice','Packing List','Bill of Lading','Certificate of Origin (Form D)',
+                 'Phytosanitary Certificate','Fumigation Certificate','SPSIC / Import Permit (BPI)',
+                 'Insurance Policy','Customs Entry (SAD)'];
+
+function ensureChain(){
+  if (!S.impSuppliers) S.impSuppliers = [
+    {id:'SUP1', name:'Mekong Delta Rice Export JSC', country:'Vietnam', city:'Can Tho', port:'Cat Lai (Ho Chi Minh)',
+     incoterm:'CIF', pay:'LC at sight', lead:21, contact:'export@mekongdelta.example', varieties:'Jasmine ST25, OM5451, 5% broken',
+     fob:432, cur:'USD', otd:96, note:'Long-grain fragrant. Reliable on ST25; ask for the newest crop.'},
+    {id:'SUP2', name:'Saigon Grain Trading Co.', country:'Vietnam', city:'Ho Chi Minh', port:'Cat Lai (Ho Chi Minh)',
+     incoterm:'FOB', pay:'30% TT down, 70% vs BL copy', lead:18, contact:'sales@saigongrain.example',
+     varieties:'IR64, 25% broken, White long grain', fob:398, cur:'USD', otd:91, note:'Best pricing on 25% broken for wholesale.'},
+    {id:'SUP3', name:'Hai Phong Agri Export', country:'Vietnam', city:'Hai Phong', port:'Hai Phong',
+     incoterm:'CFR', pay:'LC 30 days', lead:24, contact:'trade@haiphongagri.example',
+     varieties:'Japonica, ST24, Glutinous', fob:455, cur:'USD', otd:88, note:'Northern port — longer sailing to Mindanao.'},
+    {id:'SUP4', name:'Iligan Valley Mills', country:'Philippines', city:'Iligan City', port:'—',
+     incoterm:'EXW', pay:'COD', lead:2, contact:'0917-000-0000', varieties:'Sinandomeng, Dinorado, NFA Well-Milled',
+     fob:0, cur:'PHP', otd:99, note:'Local backup when import lands late.'}
+  ];
+  if (!S.imports)   S.imports = [];
+  if (!S.unload)    S.unload = [];
+  if (!S.fleet)     S.fleet = [
+    {id:'VH1', plate:'ABC 1234', type:'10-wheeler', cap:300, driver:'Rey Bacaltos', phone:'0917-000-0001',
+     tracker:'phone', dev:'', lat:8.196, lon:124.204, spd:0, hdg:0, ts:'', trail:[]},
+    {id:'VH2', plate:'XYZ 5678', type:'6-wheeler forward', cap:150, driver:'Jun Palacio', phone:'0917-000-0002',
+     tracker:'sinotrack', dev:'ST901-882431', lat:8.228, lon:124.245, spd:0, hdg:0, ts:'', trail:[]}
+  ];
+  if (!S.trips)     S.trips = [];
+  if (!S.wms)       S.wms = [
+    {id:'L1', code:'A-01', zone:'Bay A', kind:'Floor stack', cap:400, tiers:12, sku:'', qty:0},
+    {id:'L2', code:'A-02', zone:'Bay A', kind:'Floor stack', cap:400, tiers:12, sku:'', qty:0},
+    {id:'L3', code:'B-01', zone:'Bay B', kind:'Floor stack', cap:300, tiers:10, sku:'', qty:0},
+    {id:'L4', code:'B-02', zone:'Bay B', kind:'Pallet rack',  cap:200, tiers:4,  sku:'', qty:0},
+    {id:'L5', code:'C-01', zone:'Bay C', kind:'Floor stack', cap:500, tiers:12, sku:'', qty:0},
+    {id:'L6', code:'RF-1', zone:'Retail Front', kind:'Shelf', cap:80, tiers:3, sku:'', qty:0},
+    {id:'L7', code:'QN-1', zone:'Quarantine', kind:'Hold',    cap:120, tiers:8, sku:'', qty:0}
+  ];
+  if (!S.wmsTasks)  S.wmsTasks = [];
+}
+
+/* ─────────── SUPPLIERS ─────────── */
+function renderOvs(){
+  ensureChain(); ensureWh(); ensureSD(); ensureAgents();
+  const L = S.impSuppliers;
+  $('#ovsN').textContent = L.length;
+  const cty = [...new Set(L.map(s => s.country))];
+  $('#ovsCty').textContent = cty.join(' · ');
+  const imp = L.filter(s => s.country !== 'Philippines');
+  $('#ovsLead').textContent = imp.length ? Math.round(imp.reduce((a,s) => a+s.lead,0)/imp.length) + ' d' : '—';
+  $('#ovsOtd').textContent = L.length ? Math.round(L.reduce((a,s) => a+(+s.otd||0),0)/L.length) + '%' : '—';
+  $('#ovsList').innerHTML = L.map(s => `
+    <div class="item" onclick="ovsSheet('${s.id}')">
+      <span class="tag ${s.country==='Vietnam'?'t-ok':'t-dim'}">${s.country==='Vietnam'?'🇻🇳':s.country==='Philippines'?'🇵🇭':'🌏'}</span>
+      <div class="g"><b>${escH(s.name)}</b>
+        <small>${escH(s.city)}${s.port!=='—'?' · '+escH(s.port):''} · ${escH(s.incoterm)} · lead ${s.lead}d${s.fob?' · $'+s.fob+'/MT':''}</small></div>
+      <span class="tag ${s.otd>=95?'t-ok':s.otd>=90?'':'t-warn'}">${s.otd}%</span>
+    </div>`).join('') || '<div class="empty">No suppliers yet.</div>';
+}
+window.ovsSheet = id => {
+  const s = S.impSuppliers.find(x => x.id === id); if (!s) return;
+  const ship = S.imports.filter(i => i.sup === id);
+  sheet(`<h2 class="sec">${escH(s.name)}</h2>
+    <div class="row tight" style="margin-bottom:8px">
+      <span class="tag">${escH(s.country)}</span><span class="tag">${escH(s.incoterm)}</span>
+      <span class="tag">lead ${s.lead} days</span><span class="tag ${s.otd>=95?'t-ok':''}">${s.otd}% on time</span></div>
+    <div class="ai-note"><b>Terms</b>${escH(s.pay)}${s.fob?` · ${escH(s.cur)} ${s.fob} per metric ton (${escH(s.incoterm)})`:''}</div>
+    <p class="muted" style="font-size:12.5px">Port of loading: <b>${escH(s.port)}</b><br>Varieties: ${escH(s.varieties)}<br>Contact: ${escH(s.contact)}</p>
+    ${s.note?`<p class="muted" style="font-size:12px;font-style:italic">${escH(s.note)}</p>`:''}
+    <h2 class="sec" style="margin-top:14px;font-size:13px">Shipments from this supplier</h2>
+    ${ship.length?ship.map(i=>`<div class="item" onclick="impSheet('${i.id}')"><div class="g"><b>${escH(i.ref)}</b><small>${IMPG(i.stage).l} · ${i.sacks} sacks</small></div></div>`).join(''):'<div class="empty">None yet.</div>'}
+    <div class="row tight" style="margin-top:12px">
+      <button class="btn pri" onclick="closeSheet();impNew('${s.id}')">New shipment</button>
+      <button class="btn" onclick="ovsEdit('${s.id}')">Edit</button></div>`);
+};
+window.ovsEdit = id => {
+  const s = id ? S.impSuppliers.find(x => x.id === id) : {id:'', name:'', country:'Vietnam', city:'', port:'', incoterm:'CIF', pay:'', lead:21, contact:'', varieties:'', fob:0, cur:'USD', otd:95, note:''};
+  sheet(`<h2 class="sec">${id?'Edit':'New'} supplier</h2>
+    <label class="f"><span>Company name</span><input id="sfName" value="${escH(s.name)}"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Country</span>
+      <select id="sfCty">${['Vietnam','Thailand','Pakistan','India','Myanmar','Philippines'].map(c=>`<option ${s.country===c?'selected':''}>${c}</option>`).join('')}</select></label>
+      <label class="f" style="flex:1"><span>City</span><input id="sfCity" value="${escH(s.city)}"></label></div>
+    <label class="f"><span>Port of loading</span><input id="sfPort" value="${escH(s.port)}" placeholder="Cat Lai (Ho Chi Minh)"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Incoterm</span>
+      <select id="sfInc">${['FOB','CIF','CFR','EXW','DAP'].map(c=>`<option ${s.incoterm===c?'selected':''}>${c}</option>`).join('')}</select></label>
+      <label class="f" style="flex:1"><span>Lead time (days)</span><input id="sfLead" type="number" value="${s.lead}"></label></div>
+    <label class="f"><span>Payment terms</span><input id="sfPay" value="${escH(s.pay)}" placeholder="LC at sight"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Price / MT</span><input id="sfFob" type="number" value="${s.fob}"></label>
+      <label class="f" style="flex:1"><span>Currency</span><select id="sfCur">${['USD','PHP','VND'].map(c=>`<option ${s.cur===c?'selected':''}>${c}</option>`).join('')}</select></label></div>
+    <label class="f"><span>Varieties offered</span><input id="sfVar" value="${escH(s.varieties)}"></label>
+    <label class="f"><span>Contact</span><input id="sfCon" value="${escH(s.contact)}"></label>
+    <label class="f"><span>Notes</span><textarea id="sfNote" rows="2">${escH(s.note)}</textarea></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="ovsSave('${id||''}')">Save supplier</button>`);
+};
+window.ovsSave = async id => {
+  const o = {id: id || uid('SUP'), name:$('#sfName').value.trim(), country:$('#sfCty').value, city:$('#sfCity').value.trim(),
+    port:$('#sfPort').value.trim()||'—', incoterm:$('#sfInc').value, lead:+$('#sfLead').value||21,
+    pay:$('#sfPay').value.trim(), fob:+$('#sfFob').value||0, cur:$('#sfCur').value,
+    varieties:$('#sfVar').value.trim(), contact:$('#sfCon').value.trim(), note:$('#sfNote').value.trim(),
+    otd: id ? (S.impSuppliers.find(x=>x.id===id).otd) : 95};
+  if (!o.name) return toast('Company name is required');
+  const i = S.impSuppliers.findIndex(x => x.id === o.id);
+  if (i >= 0) S.impSuppliers[i] = o; else S.impSuppliers.push(o);
+  save(); await audit('supplier.save', {id:o.id, name:o.name});
+  closeSheet(); renderOvs(); toast('Supplier saved');
+};
+
+/* ─────────── IMPORT SHIPMENTS + LANDED COST ─────────── */
+function landed(i){
+  const fx = +i.fx || 58;
+  const mt = (i.sacks * (i.kg||50)) / 1000;
+  const fob = (+i.pricePerMt || 0) * mt;                 // in foreign currency
+  const freight = +i.freight || 0, insure = +i.insurance || 0;
+  const cifFc = fob + (i.incoterm === 'FOB' ? freight + insure : 0);
+  const cifPhp = cifFc * fx;
+  const duty = cifPhp * ((+i.dutyPct || 35) / 100);      // RA 11203: 35% ASEAN
+  const other = (+i.brokerage||0) + (+i.arrastre||0) + (+i.wharfage||0) + (+i.trucking||0) + (+i.misc||0);
+  const total = cifPhp + duty + other;
+  return {mt, fob, cifFc, cifPhp, duty, other, total,
+          perSack: i.sacks ? total / i.sacks : 0, perKg: (i.sacks*(i.kg||50)) ? total/(i.sacks*(i.kg||50)) : 0};
+}
+function renderImp(){
+  ensureChain();
+  const L = S.imports, open = L.filter(i => i.stage !== 'RECEIVED');
+  $('#impTransit').textContent = L.filter(i => ['LOADED','TRANSIT'].includes(i.stage)).length;
+  $('#impTeu').textContent = open.reduce((a,i) => a + (+i.ctrs||0), 0) + ' containers';
+  $('#impPort').textContent = L.filter(i => ['ARRIVED','CUSTOMS','RELEASED'].includes(i.stage)).length;
+  $('#impVal').textContent = Pk(open.reduce((a,i) => a + landed(i).total, 0));
+  $('#impList').innerHTML = L.length ? L.map(i => {
+    const s = IMPG(i.stage), pct = Math.round((IMPI(i.stage)+1)/IMPSTAGES.length*100);
+    const sup = S.impSuppliers.find(x => x.id === i.sup);
+    const late = i.eta && new Date(i.eta) < new Date() && IMPI(i.stage) < IMPI('ARRIVED');
+    return `<div class="item" onclick="impSheet('${i.id}')">
+      <div class="g"><b>${escH(i.ref)} ${late?'<span class="tag t-warn">ETA passed</span>':''}</b>
+        <small>${escH(sup?sup.name:'—')} · ${i.sacks} sacks · ${escH(s.l)}${i.eta?' · ETA '+i.eta:''}</small>
+        <div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="tag">${pct}%</span></div>`;
+  }).join('') : '<div class="empty">No shipments yet. Tap “+ Shipment” to plan an import.</div>';
+}
+window.impNew = supId => {
+  ensureChain();
+  const sup = S.impSuppliers.find(x => x.id === supId) || S.impSuppliers[0];
+  sheet(`<h2 class="sec">New import shipment</h2>
+    <label class="f"><span>Supplier</span><select id="ifSup">${S.impSuppliers.map(s=>`<option value="${s.id}" ${sup&&s.id===sup.id?'selected':''}>${escH(s.name)} — ${escH(s.country)}</option>`).join('')}</select></label>
+    <div class="row"><label class="f" style="flex:1"><span>Variety</span><input id="ifVar" value="Jasmine ST25"></label>
+      <label class="f" style="flex:1"><span>Containers</span><input id="ifCtr" type="number" value="2"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Sacks</span><input id="ifSack" type="number" value="1000"></label>
+      <label class="f" style="flex:1"><span>kg / sack</span><input id="ifKg" type="number" value="50"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Price / MT (${escH(sup?sup.cur:'USD')})</span><input id="ifPrice" type="number" value="${sup?sup.fob:430}"></label>
+      <label class="f" style="flex:1"><span>FX rate → PHP</span><input id="ifFx" type="number" value="58"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Freight (${escH(sup?sup.cur:'USD')})</span><input id="ifFrt" type="number" value="1800"></label>
+      <label class="f" style="flex:1"><span>Insurance</span><input id="ifIns" type="number" value="260"></label></div>
+    <label class="f"><span>ETA at port</span><input id="ifEta" type="date" value="${new Date(Date.now()+ (sup?sup.lead:21)*864e5).toISOString().slice(0,10)}"></label>
+    <label class="f"><span>Port of discharge</span><input id="ifPod" value="Iligan City Port"></label>
+    <label class="f"><span>Deliver to warehouse</span><select id="ifWh">${S.whs.filter(w=>w.active).map(w=>`<option value="${w.id}" ${S.cfg.wh===w.id?'selected':''}>${escH(w.name)}</option>`).join('')}</select></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="impSave()">Create shipment</button>`);
+};
+window.impSave = async () => {
+  const supId = $('#ifSup').value, sup = S.impSuppliers.find(x => x.id === supId);
+  const o = {id: uid('IMP'), ref: 'IMP-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' + String(S.imports.length+1).padStart(2,'0'),
+    sup: supId, variety: $('#ifVar').value.trim(), ctrs:+$('#ifCtr').value||1, sacks:+$('#ifSack').value||0, kg:+$('#ifKg').value||50,
+    pricePerMt:+$('#ifPrice').value||0, fx:+$('#ifFx').value||58, freight:+$('#ifFrt').value||0, insurance:+$('#ifIns').value||0,
+    incoterm: sup?sup.incoterm:'CIF', dutyPct:35, brokerage:18000, arrastre:12000, wharfage:4500, trucking:22000, misc:6000,
+    eta: $('#ifEta').value, pod: $('#ifPod').value.trim(), wh: $('#ifWh').value || S.cfg.wh,
+    stage:'PO', docs:{}, history:[{stage:'PO', ts:new Date().toISOString()}]};
+  S.imports.unshift(o); save();
+  await audit('import.create', {ref:o.ref, sup:supId, sacks:o.sacks});
+  closeSheet(); renderImp(); toast('Shipment ' + o.ref + ' created');
+};
+window.impSheet = id => {
+  const i = S.imports.find(x => x.id === id); if (!i) return;
+  const sup = S.impSuppliers.find(x => x.id === i.sup), c = landed(i), idx = IMPI(i.stage);
+  const nxt = IMPSTAGES[idx+1];
+  sheet(`<h2 class="sec">${escH(i.ref)}</h2>
+    <div class="row tight" style="margin-bottom:6px"><span class="tag">${escH(sup?sup.country:'')}</span>
+      <span class="tag">${i.ctrs} ctr</span><span class="tag">${i.sacks} sacks</span><span class="tag">${c.mt.toFixed(1)} MT</span></div>
+    <p class="muted" style="font-size:12.5px;margin-bottom:8px">${escH(sup?sup.name:'')} · ${escH(i.variety)}<br>
+      ${escH(sup?sup.port:'')} → ${escH(i.pod)}${i.eta?' · ETA '+i.eta:''}<br>Deliver to: <b>${escH(whName(i.wh))}</b></p>
+    <h2 class="sec" style="font-size:13px">Progress</h2>
+    <div class="tl">${IMPSTAGES.map((s,n)=>{
+      const h = (i.history||[]).find(x=>x.stage===s[0]);
+      return `<div class="ev ${n<idx?'done':n===idx?'now':''}"><b>${s[1]}</b><small>${h?new Date(h.ts).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):s[2]}</small></div>`;
+    }).join('')}</div>
+    <h2 class="sec" style="font-size:13px;margin-top:12px">Landed cost</h2>
+    <table class="tbl"><tbody>
+      <tr><td>Goods (${escH(sup?sup.cur:'USD')} ${i.pricePerMt}/MT × ${c.mt.toFixed(1)} MT)</td><td class="num">${(sup?sup.cur:'USD')} ${c.fob.toLocaleString()}</td></tr>
+      ${i.incoterm==='FOB'?`<tr><td>Freight + insurance</td><td class="num">${(sup?sup.cur:'USD')} ${(+i.freight + +i.insurance).toLocaleString()}</td></tr>`:''}
+      <tr><td>CIF value @ ${i.fx}</td><td class="num">${Pk(c.cifPhp)}</td></tr>
+      <tr><td>Import duty ${i.dutyPct}% <span class="muted">(RA 11203)</span></td><td class="num">${Pk(c.duty)}</td></tr>
+      <tr><td>VAT <span class="muted">(rice is exempt)</span></td><td class="num">₱0</td></tr>
+      <tr><td>Brokerage · arrastre · wharfage · trucking</td><td class="num">${Pk(c.other)}</td></tr>
+      <tr><td><b>Total landed</b></td><td class="num"><b>${Pk(c.total)}</b></td></tr>
+      <tr><td><b>Per sack (${i.kg}kg)</b></td><td class="num"><b>${P(c.perSack)}</b></td></tr>
+      <tr><td>Per kilo</td><td class="num">${P(c.perKg)}</td></tr>
+    </tbody></table>
+    <button class="btn sm" style="margin-top:8px" onclick="impCost('${i.id}')">Edit cost inputs</button>
+    <h2 class="sec" style="font-size:13px;margin-top:14px">Document pack</h2>
+    <div class="row tight" style="flex-wrap:wrap">${IMPDOCS.map(d=>`
+      <button class="btn sm ${i.docs&&i.docs[d]?'pri':''}" onclick="impDoc('${i.id}','${escH(d)}')">${i.docs&&i.docs[d]?'✓':'○'} ${escH(d)}</button>`).join('')}</div>
+    <p class="muted" style="font-size:11px;margin-top:6px">Tap to mark a document received. Customs clearance needs all of them on hand.</p>
+    ${nxt?`<button class="btn pri w" style="margin-top:12px" onclick="impAdvance('${i.id}')">Advance → ${nxt[1]}</button>`:
+      '<div class="ai-note" style="margin-top:12px"><b>Complete</b>This shipment has been received into the warehouse.</div>'}
+    ${i.stage==='RELEASED'?`<button class="btn w" style="margin-top:8px" onclick="closeSheet();unlNew('${i.id}')">Create unloading job</button>`:''}`);
+};
+window.impCost = id => {
+  const i = S.imports.find(x => x.id === id);
+  sheet(`<h2 class="sec">Cost inputs — ${escH(i.ref)}</h2>
+    <div class="row"><label class="f" style="flex:1"><span>Duty %</span><input id="cfDuty" type="number" value="${i.dutyPct}"></label>
+      <label class="f" style="flex:1"><span>FX → PHP</span><input id="cfFx" type="number" value="${i.fx}"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Brokerage</span><input id="cfBrk" type="number" value="${i.brokerage}"></label>
+      <label class="f" style="flex:1"><span>Arrastre</span><input id="cfArr" type="number" value="${i.arrastre}"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Wharfage</span><input id="cfWhf" type="number" value="${i.wharfage}"></label>
+      <label class="f" style="flex:1"><span>Trucking</span><input id="cfTrk" type="number" value="${i.trucking}"></label></div>
+    <label class="f"><span>Other / misc</span><input id="cfMisc" type="number" value="${i.misc}"></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="impCostSave('${id}')">Save & recalculate</button>`);
+};
+window.impCostSave = id => {
+  const i = S.imports.find(x => x.id === id);
+  Object.assign(i, {dutyPct:+$('#cfDuty').value, fx:+$('#cfFx').value, brokerage:+$('#cfBrk').value,
+    arrastre:+$('#cfArr').value, wharfage:+$('#cfWhf').value, trucking:+$('#cfTrk').value, misc:+$('#cfMisc').value});
+  save(); impSheet(id); toast('Landed cost recalculated');
+};
+window.impDoc = (id, d) => {
+  const i = S.imports.find(x => x.id === id);
+  i.docs = i.docs || {};
+  i.docs[d] = i.docs[d] ? '' : new Date().toISOString();
+  save(); impSheet(id);
+};
+window.impAdvance = async id => {
+  const i = S.imports.find(x => x.id === id), idx = IMPI(i.stage), nxt = IMPSTAGES[idx+1];
+  if (!nxt) return;
+  if (nxt[0] === 'CUSTOMS'){
+    const missing = IMPDOCS.filter(d => !(i.docs||{})[d]);
+    if (missing.length > 3) toast('⚠ ' + missing.length + ' documents still missing');
+  }
+  i.stage = nxt[0];
+  (i.history = i.history || []).push({stage: nxt[0], ts: new Date().toISOString()});
+  if (nxt[0] === 'RECEIVED'){
+    const c = landed(i);
+    const p = S.products.find(x => x.name.toLowerCase().includes((i.variety||'').split(' ')[0].toLowerCase()));
+    if (p){ p.qty = (+p.qty||0) + i.sacks; p.cost = c.perSack; }
+    S.wmsTasks.push({id:uid('T'), kind:'putaway', ref:i.ref, sku:p?p.id:'', qty:i.sacks, loc:'', wh:i.wh||S.cfg.wh, ts:new Date().toISOString(), done:false});
+    toast('Stock received — putaway task created');
+  }
+  save(); await audit('import.stage', {ref:i.ref, stage:nxt[0]});
+  impSheet(id); renderImp();
+};
+
+/* ─────────── UNLOADING ─────────── */
+function renderUnl(){
+  ensureChain();
+  const L = S.unload, act = L.filter(u => !u.done);
+  $('#unlAct').textContent = act.length;
+  const td = today();
+  const todayJobs = L.filter(u => (u.start||'').slice(0,10) === td);
+  const sacks = todayJobs.reduce((a,u) => a + (+u.tallied||0), 0);
+  $('#unlToday').textContent = sacks.toLocaleString();
+  const hrs = todayJobs.reduce((a,u) => {
+    const end = u.done ? new Date(u.endTs||Date.now()) : new Date();
+    return a + Math.max(0.15, (end - new Date(u.start))/36e5);
+  }, 0);
+  $('#unlRate').textContent = hrs ? Math.round(sacks/hrs) + ' sacks/hr' : '— sacks/hr';
+  $('#unlDisc').textContent = L.reduce((a,u) => a + (+u.short||0) + (+u.damaged||0), 0);
+  $('#unlList').innerHTML = L.length ? L.map(u => {
+    const pct = u.manifest ? Math.min(100, Math.round(u.tallied/u.manifest*100)) : 0;
+    return `<div class="item" onclick="unlSheet('${u.id}')">
+      <span class="tag ${u.done?'t-ok':''}">${u.done?'✓':'▶'}</span>
+      <div class="g"><b>${escH(u.ref)} · ${escH(u.bay)} <span class="tag t-dim">${escH((whOf(u.wh)||{}).code||'')}</span></b>
+        <small>${u.tallied}/${u.manifest} sacks · gang ${escH(u.gang)}${u.short||u.damaged?` · <span style="color:var(--red,#E5484D)">${u.short} short, ${u.damaged} damaged</span>`:''}</small>
+        <div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="tag">${pct}%</span></div>`;
+  }).join('') : '<div class="empty">No unloading jobs. Create one when a container or truck arrives.</div>';
+}
+window.unlNew = impId => {
+  ensureChain();
+  const i = impId ? S.imports.find(x => x.id === impId) : null;
+  sheet(`<h2 class="sec">New unloading job</h2>
+    <label class="f"><span>Reference</span><input id="ufRef" value="${i?escH(i.ref):'UNL-'+new Date().toISOString().slice(2,10).replace(/-/g,'')}"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Manifest (sacks)</span><input id="ufMan" type="number" value="${i?i.sacks:500}"></label>
+      <label class="f" style="flex:1"><span>Warehouse</span><select id="ufWh" onchange="unlBays()">${S.whs.map(w=>`<option value="${w.id}" ${(i&&i.wh?i.wh:S.cfg.wh)===w.id?'selected':''}>${escH(w.name)}</option>`).join('')}</select></label></div>
+    <label class="f"><span>Bay / dock</span><select id="ufBay"></select></label>
+    <div class="row"><label class="f" style="flex:1"><span>Gang / crew</span><input id="ufGang" value="Gang A (6 pax)"></label>
+      <label class="f" style="flex:1"><span>Truck / container</span><input id="ufVeh" value="${i?'CTR-'+i.ctrs+'x40HC':''}"></label></div>
+    <button class="btn pri w" style="margin-top:10px" onclick="unlSave('${impId||''}')">Start unloading</button>`);
+  unlBays();
+};
+window.unlBays = () => {
+  const wh = $('#ufWh') ? $('#ufWh').value : S.cfg.wh;
+  const bays = whLocs(wh);
+  $('#ufBay').innerHTML = bays.length ? bays.map(l=>`<option>${escH(l.code)}</option>`).join('')
+    : '<option value="">no bays at this site</option>';
+};
+window.unlSave = async impId => {
+  const o = {id:uid('UNL'), ref:$('#ufRef').value.trim(), manifest:+$('#ufMan').value||0, bay:$('#ufBay').value, wh:$('#ufWh').value||S.cfg.wh,
+    gang:$('#ufGang').value.trim(), veh:$('#ufVeh').value.trim(), imp:impId||'',
+    tallied:0, short:0, damaged:0, start:new Date().toISOString(), endTs:'', done:false, tally:[]};
+  S.unload.unshift(o); save(); await audit('unload.start', {ref:o.ref, manifest:o.manifest});
+  closeSheet(); renderUnl(); toast('Unloading started — tally as sacks come off');
+};
+window.unlSheet = id => {
+  const u = S.unload.find(x => x.id === id); if (!u) return;
+  const pct = u.manifest ? Math.min(100, Math.round(u.tallied/u.manifest*100)) : 0;
+  const hrs = Math.max(0.15, ((u.done ? new Date(u.endTs) : new Date()) - new Date(u.start))/36e5);
+  sheet(`<h2 class="sec">${escH(u.ref)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(u.bay)}</span><span class="tag">${escH(u.gang)}</span>
+      ${u.veh?`<span class="tag">${escH(u.veh)}</span>`:''}<span class="tag ${u.done?'t-ok':''}">${u.done?'closed':'discharging'}</span></div>
+    <div class="grid g3" style="margin-bottom:10px">
+      <div class="kpi acc-c"><div class="lab">Tallied</div><div class="val" style="font-size:20px">${u.tallied}</div><div class="sub">of ${u.manifest}</div></div>
+      <div class="kpi acc-y"><div class="lab">Rate</div><div class="val" style="font-size:20px">${Math.round(u.tallied/hrs)}</div><div class="sub">sacks/hr</div></div>
+      <div class="kpi acc-g"><div class="lab">Remaining</div><div class="val" style="font-size:20px">${Math.max(0,u.manifest-u.tallied)}</div><div class="sub">${u.tallied<u.manifest?'~'+Math.ceil((u.manifest-u.tallied)/Math.max(1,u.tallied/hrs))+' hr left':'complete'}</div></div>
+    </div>
+    <div class="bar" style="height:10px;margin-bottom:12px"><i style="width:${pct}%"></i></div>
+    ${!u.done?`<h2 class="sec" style="font-size:13px">Tally</h2>
+    <div class="row tight" style="flex-wrap:wrap;margin-bottom:8px">
+      ${[10,25,50,100].map(n=>`<button class="btn sm pri" onclick="unlTally('${u.id}',${n})">+${n}</button>`).join('')}
+      <button class="btn sm" onclick="unlTally('${u.id}',1)">+1</button>
+      <button class="btn sm" onclick="unlTally('${u.id}',-10)">−10</button></div>
+    <div class="row"><label class="f" style="flex:1"><span>Shortlanded</span><input id="ufShort" type="number" value="${u.short}"></label>
+      <label class="f" style="flex:1"><span>Damaged / torn</span><input id="ufDmg" type="number" value="${u.damaged}"></label></div>
+    <button class="btn sm" onclick="unlDisc('${u.id}')">Save discrepancy</button>
+    <button class="btn pri w" style="margin-top:10px" onclick="unlClose('${u.id}')">Close job & put away</button>`
+    :`<div class="ai-note"><b>Closed</b>${u.tallied} sacks received${u.short?`, ${u.short} shortlanded`:''}${u.damaged?`, ${u.damaged} damaged`:''}. Discharge took ${hrs.toFixed(1)} hours.</div>`}
+    <h2 class="sec" style="font-size:13px;margin-top:12px">Tally log</h2>
+    ${(u.tally||[]).slice(-8).reverse().map(t=>`<div class="item"><div class="g"><b>${t.n>0?'+':''}${t.n} sacks</b><small>${new Date(t.ts).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})} · running ${t.run}</small></div></div>`).join('')||'<div class="empty">No tally entries yet.</div>'}`);
+};
+window.unlTally = (id, n) => {
+  const u = S.unload.find(x => x.id === id);
+  u.tallied = Math.max(0, u.tallied + n);
+  (u.tally = u.tally || []).push({n, ts:new Date().toISOString(), run:u.tallied});
+  save(); unlSheet(id);
+  if (u.tallied >= u.manifest) toast('Manifest count reached — check for shortlanded sacks');
+};
+window.unlDisc = id => {
+  const u = S.unload.find(x => x.id === id);
+  u.short = +$('#ufShort').value||0; u.damaged = +$('#ufDmg').value||0;
+  save(); unlSheet(id); renderUnl(); toast('Discrepancy saved');
+};
+window.unlClose = async id => {
+  const u = S.unload.find(x => x.id === id);
+  u.done = true; u.endTs = new Date().toISOString();
+  S.wmsTasks.push({id:uid('T'), kind:'putaway', ref:u.ref, sku:'', qty:u.tallied, loc:'', wh:u.wh||S.cfg.wh, ts:new Date().toISOString(), done:false});
+  save(); await audit('unload.close', {ref:u.ref, tallied:u.tallied, short:u.short, damaged:u.damaged});
+  closeSheet(); renderUnl(); renderWms(); toast('Job closed — putaway task queued');
+};
+
+/* ─────────── TMS · FLEET + GPS ─────────── */
+const R2D = 180/Math.PI;
+function haversine(a, b){
+  const R = 6371, dLat = (b.lat-a.lat)/R2D, dLon = (b.lon-a.lon)/R2D;
+  const s = Math.sin(dLat/2)**2 + Math.cos(a.lat/R2D)*Math.cos(b.lat/R2D)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function renderTms(){
+  ensureChain();
+  const F = S.fleet;
+  $('#tmsN').textContent = F.length;
+  $('#tmsMoving').textContent = F.filter(v => (+v.spd||0) > 3).length + ' moving';
+  $('#tmsTrips').textContent = S.trips.filter(t => !t.done).length;
+  const km = F.reduce((a,v) => a + (v.trail||[]).reduce((s,p,i,arr) => i ? s + haversine(arr[i-1], p) : 0, 0), 0);
+  $('#tmsKm').textContent = km.toFixed(1) + ' km';
+  $('#tmsList').innerHTML = F.map(v => {
+    const moving = (+v.spd||0) > 3, age = v.ts ? Math.round((Date.now()-new Date(v.ts))/6e4) : null;
+    return `<div class="item" onclick="tmsSheet('${v.id}')">
+      <span class="tag ${moving?'t-ok':'t-dim'}">${moving?'▶':'■'}</span>
+      <div class="g"><b>${escH(v.plate)} · ${escH(v.type)}</b>
+        <small>${escH(v.driver)} · ${escH(v.tracker==='phone'?'phone GPS':v.tracker.toUpperCase()+(v.dev?' '+v.dev:''))}
+        ${v.ts?` · ${moving?Math.round(v.spd)+' km/h':'stopped'} · ${age<1?'just now':age+'m ago'}`:' · no fix yet'}</small></div>
+      <span class="tag">${v.cap} sk</span></div>`;
+  }).join('');
+  drawTmsMap();
+}
+function drawTmsMap(){
+  const cv = $('#tmsMap'); if (!cv) return;
+  const w = cv.clientWidth || 340, h = 250;
+  cv.width = w * devicePixelRatio; cv.height = h * devicePixelRatio;
+  const x = cv.getContext('2d'); x.scale(devicePixelRatio, devicePixelRatio);
+  x.fillStyle = '#0A1730'; x.fillRect(0,0,w,h);
+  const pts = S.fleet.flatMap(v => (v.trail||[]).concat(v.lat ? [{lat:v.lat, lon:v.lon}] : []));
+  if (!pts.length){ x.fillStyle='#5A6B84'; x.font='12px Inter'; x.textAlign='center';
+    x.fillText('No GPS fixes yet — start phone tracking or pull the tracker feed', w/2, h/2); return; }
+  const lats = pts.map(p=>p.lat), lons = pts.map(p=>p.lon);
+  const pad = 0.012;
+  const la0 = Math.min(...lats)-pad, la1 = Math.max(...lats)+pad;
+  const lo0 = Math.min(...lons)-pad, lo1 = Math.max(...lons)+pad;
+  const px = p => [ (p.lon-lo0)/(lo1-lo0)*(w-30)+15, h-15-((p.lat-la0)/(la1-la0)*(h-30)) ];
+  // grid
+  x.strokeStyle = 'rgba(255,255,255,.05)'; x.lineWidth = 1;
+  for (let i=1;i<6;i++){ x.beginPath(); x.moveTo(w/6*i,0); x.lineTo(w/6*i,h); x.stroke();
+    x.beginPath(); x.moveTo(0,h/6*i); x.lineTo(w,h/6*i); x.stroke(); }
+  const COLS = ['#00B8D9','#FFD60A','#1FBF75','#F25C4D'];
+  S.fleet.forEach((v,n) => {
+    const col = COLS[n%COLS.length], tr = (v.trail||[]);
+    if (tr.length > 1){
+      x.strokeStyle = col; x.lineWidth = 2.2; x.globalAlpha = .7; x.beginPath();
+      tr.forEach((p,i) => { const [a,b] = px(p); i ? x.lineTo(a,b) : x.moveTo(a,b); });
+      x.stroke(); x.globalAlpha = 1;
+    }
+    if (v.lat){
+      const [a,b] = px(v);
+      x.fillStyle = col; x.beginPath(); x.arc(a,b,6,0,7); x.fill();
+      x.strokeStyle = '#0A1730'; x.lineWidth = 2; x.stroke();
+      if ((+v.spd||0) > 3){ x.strokeStyle = col; x.globalAlpha=.35; x.beginPath(); x.arc(a,b,12,0,7); x.stroke(); x.globalAlpha=1; }
+      x.fillStyle = '#CBD9EC'; x.font = '600 10px JetBrains Mono'; x.textAlign = 'center';
+      x.fillText(v.plate, a, b-11);
+    }
+  });
+  x.fillStyle = 'rgba(255,255,255,.35)'; x.font = '9px JetBrains Mono'; x.textAlign = 'left';
+  x.fillText('LIVE POSITIONS · ' + pts.length + ' fixes', 10, 14);
+}
+window.tmsSheet = id => {
+  const v = S.fleet.find(x => x.id === id); if (!v) return;
+  const dist = (v.trail||[]).reduce((s,p,i,arr) => i ? s + haversine(arr[i-1],p) : 0, 0);
+  const trip = S.trips.find(t => t.veh === id && !t.done);
+  sheet(`<h2 class="sec">${escH(v.plate)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(v.type)}</span><span class="tag">${v.cap} sacks</span>
+      <span class="tag ${v.tracker==='phone'?'':'t-ok'}">${v.tracker==='phone'?'phone GPS':escH(v.tracker.toUpperCase())}</span></div>
+    <p class="muted" style="font-size:12.5px">Driver: <b>${escH(v.driver)}</b> · ${escH(v.phone)}<br>
+      ${v.ts?`Last fix: ${new Date(v.ts).toLocaleString('en-PH')}<br>Position: ${v.lat.toFixed(5)}, ${v.lon.toFixed(5)} · ${Math.round(v.spd||0)} km/h`:'No GPS fix recorded yet.'}<br>
+      Trail distance: ${dist.toFixed(1)} km · ${(v.trail||[]).length} breadcrumbs</p>
+    ${trip?`<div class="ai-note"><b>On trip</b>${escH(trip.dest)} — ${trip.stops} stop(s), departed ${new Date(trip.start).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</div>`:''}
+    <div class="row tight" style="margin-top:10px;flex-wrap:wrap">
+      ${trip?`<button class="btn pri sm" onclick="tripEnd('${trip.id}')">End trip</button>`
+            :`<button class="btn pri sm" onclick="tripStart('${v.id}')">Start trip</button>`}
+      <button class="btn sm" onclick="tmsEdit('${v.id}')">Edit vehicle</button>
+      ${v.lat?`<button class="btn sm" onclick="window.open('https://www.google.com/maps?q=${v.lat},${v.lon}','_blank')">Open in Maps</button>`:''}
+      <button class="btn sm" onclick="tmsClear('${v.id}')">Clear trail</button></div>
+    <div class="ai-note" style="margin-top:12px"><b>Hardware trackers</b>SinoTrack ST-901/ST-903, Concox GT06 and Teltonika FMB series report to a server, not to a browser. Point the device (or its platform's webhook) at your Apps Script URL with <code class="k">action=gps</code>, <code class="k">key</code>, <code class="k">dev</code>, <code class="k">lat</code>, <code class="k">lon</code>, <code class="k">spd</code> — then tap “Pull tracker feed”.</div>`);
+};
+window.tmsEdit = id => {
+  const v = id ? S.fleet.find(x=>x.id===id) : {id:'', plate:'', type:'10-wheeler', cap:300, driver:'', phone:'', tracker:'phone', dev:''};
+  sheet(`<h2 class="sec">${id?'Edit':'New'} vehicle</h2>
+    <div class="row"><label class="f" style="flex:1"><span>Plate</span><input id="vfPlate" value="${escH(v.plate)}"></label>
+      <label class="f" style="flex:1"><span>Capacity (sacks)</span><input id="vfCap" type="number" value="${v.cap}"></label></div>
+    <label class="f"><span>Type</span><select id="vfType">${['10-wheeler','6-wheeler forward','4-wheeler elf','Tricycle','Motorcycle','Trailer'].map(t=>`<option ${v.type===t?'selected':''}>${t}</option>`).join('')}</select></label>
+    <div class="row"><label class="f" style="flex:1"><span>Driver</span><input id="vfDrv" value="${escH(v.driver)}"></label>
+      <label class="f" style="flex:1"><span>Phone</span><input id="vfPh" value="${escH(v.phone)}"></label></div>
+    <label class="f"><span>Tracking method</span><select id="vfTrk">
+      ${[['phone','This phone / driver phone GPS'],['sinotrack','SinoTrack ST-901 / ST-903'],['gt06','Concox GT06 / TR06'],['teltonika','Teltonika FMB series'],['other','Other tracker']]
+        .map(t=>`<option value="${t[0]}" ${v.tracker===t[0]?'selected':''}>${t[1]}</option>`).join('')}</select></label>
+    <label class="f"><span>Device / IMEI (hardware trackers)</span><input id="vfDev" value="${escH(v.dev)}" placeholder="ST901-882431"></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="tmsSave('${id||''}')">Save vehicle</button>`);
+};
+window.tmsSave = async id => {
+  const o = {id: id || uid('VH'), plate:$('#vfPlate').value.trim().toUpperCase(), type:$('#vfType').value,
+    cap:+$('#vfCap').value||0, driver:$('#vfDrv').value.trim(), phone:$('#vfPh').value.trim(),
+    tracker:$('#vfTrk').value, dev:$('#vfDev').value.trim()};
+  if (!o.plate) return toast('Plate number is required');
+  const ex = S.fleet.find(x => x.id === id);
+  if (ex) Object.assign(ex, o); else S.fleet.push({...o, lat:0, lon:0, spd:0, hdg:0, ts:'', trail:[]});
+  save(); await audit('fleet.save', {plate:o.plate});
+  closeSheet(); renderTms(); toast('Vehicle saved');
+};
+window.tmsClear = id => { const v = S.fleet.find(x=>x.id===id); v.trail = []; save(); tmsSheet(id); renderTms(); };
+window.tripStart = async vid => {
+  const v = S.fleet.find(x=>x.id===vid);
+  sheet(`<h2 class="sec">Start trip — ${escH(v.plate)}</h2>
+    <label class="f"><span>Destination / route</span><input id="tfDest" value="Buru-un → Poblacion → Tibanga"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Stops</span><input id="tfStops" type="number" value="3"></label>
+      <label class="f" style="flex:1"><span>Load (sacks)</span><input id="tfLoad" type="number" value="120"></label></div>
+    <button class="btn pri w" style="margin-top:10px" onclick="tripSave('${vid}')">Depart</button>`);
+};
+window.tripSave = async vid => {
+  const t = {id:uid('TR'), veh:vid, dest:$('#tfDest').value.trim(), stops:+$('#tfStops').value||1,
+    load:+$('#tfLoad').value||0, start:new Date().toISOString(), end:'', done:false};
+  S.trips.unshift(t); save(); await audit('trip.start', {veh:vid, dest:t.dest});
+  closeSheet(); renderTms(); toast('Trip started — tracking active');
+};
+window.tripEnd = async id => {
+  const t = S.trips.find(x=>x.id===id); t.done = true; t.end = new Date().toISOString();
+  save(); await audit('trip.end', {id});
+  closeSheet(); renderTms(); toast('Trip closed');
+};
+/* Phone GPS */
+let GPSW = null;
+function gpsStart(){
+  if (!navigator.geolocation) return toast('This device has no GPS');
+  const v = S.fleet.find(x => x.tracker === 'phone') || S.fleet[0];
+  if (!v) return toast('Add a vehicle first');
+  GPSW = navigator.geolocation.watchPosition(pos => {
+    const {latitude:lat, longitude:lon, speed, heading} = pos.coords;
+    v.lat = lat; v.lon = lon; v.spd = (speed||0)*3.6; v.hdg = heading||0; v.ts = new Date().toISOString();
+    (v.trail = v.trail || []).push({lat, lon, ts:v.ts});
+    if (v.trail.length > 500) v.trail.shift();
+    save(); renderTms();
+    if (S.cfg.gas) fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({action:'gps', key:S.cfg.key||'', dev:v.plate, lat, lon, spd:v.spd, ts:v.ts})}).catch(()=>{});
+  }, err => toast('GPS: ' + err.message), {enableHighAccuracy:true, maximumAge:5000, timeout:15000});
+  toast('📍 Tracking ' + v.plate + ' with this phone');
+}
+function gpsStop(){ if (GPSW != null){ navigator.geolocation.clearWatch(GPSW); GPSW = null; toast('Tracking stopped'); } }
+async function gpsPull(){
+  if (!S.cfg.gas) return toast('Connect a backend first (Admin → Backend)');
+  try{
+    const r = await fetch(S.cfg.gas + '?action=gps_list&key=' + encodeURIComponent(S.cfg.key));
+    const j = await r.json();
+    if (!j.ok) return toast('Feed error');
+    let n = 0;
+    (j.fixes||[]).forEach(f => {
+      const v = S.fleet.find(x => x.dev === f.dev || x.plate === f.dev);
+      if (!v) return;
+      v.lat = +f.lat; v.lon = +f.lon; v.spd = +f.spd||0; v.ts = f.ts;
+      (v.trail = v.trail||[]).push({lat:v.lat, lon:v.lon, ts:f.ts});
+      if (v.trail.length > 500) v.trail.shift();
+      n++;
+    });
+    save(); renderTms(); toast(n ? n + ' tracker fix(es) received' : 'No new fixes');
+  }catch(e){ toast('Could not reach the tracker feed'); }
+}
+
+/* ─────────── WMS ─────────── */
+function renderWms(){
+  ensureChain(); ensureWh();
+  const selEl = $('#wmsWh'); const sel = selEl ? (selEl.value || S.cfg.wh) : 'ALL';
+  const L = sel === 'ALL' ? S.wms : S.wms.filter(l => l.wh === sel);
+  const cap = L.reduce((a,l) => a + (+l.cap||0), 0), used = L.reduce((a,l) => a + (+l.qty||0), 0);
+  $('#wmsOcc').textContent = cap ? Math.round(used/cap*100) + '%' : '0%';
+  $('#wmsCap').textContent = used.toLocaleString() + ' of ' + cap.toLocaleString() + ' sacks';
+  $('#wmsN').textContent = L.length;
+  $('#wmsFull').textContent = L.filter(l => l.cap && l.qty/l.cap >= .9).length + ' at capacity';
+  $('#wmsTasks').textContent = S.wmsTasks.filter(t => !t.done && (sel === 'ALL' || t.wh === sel || !t.wh)).length;
+  $('#wmsList').innerHTML = L.map(l => {
+    const pct = l.cap ? Math.min(100, Math.round(l.qty/l.cap*100)) : 0;
+    const p = S.products.find(x => x.id === l.sku);
+    return `<div class="item" onclick="wmsSheet('${l.id}')">
+      <span class="tag ${pct>=90?'t-warn':pct>0?'t-ok':'t-dim'}">${escH(l.code)}</span>
+      <div class="g"><b>${escH(l.zone)} · ${escH(l.kind)}${sel==='ALL'?' <span class="tag t-dim">'+escH((whOf(l.wh)||{}).code||'?')+'</span>':''}</b>
+        <small>${l.qty}/${l.cap} sacks${p?' · '+escH(p.name):' · empty'} · max ${l.tiers} tiers</small>
+        <div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="tag">${pct}%</span></div>`;
+  }).join('');
+  $('#wmsTaskList').innerHTML = S.wmsTasks.filter(t => !t.done).length
+    ? S.wmsTasks.filter(t => !t.done).map(t => `<div class="item">
+        <span class="tag ${t.kind==='putaway'?'t-ok':''}">${t.kind==='putaway'?'📥':'📤'}</span>
+        <div class="g"><b>${t.kind==='putaway'?'Put away':'Pick'} ${t.qty} sacks${t.ref?' · '+escH(t.ref):''}</b>
+          <small>${t.loc?'to '+escH(t.loc):'location not assigned'} · ${new Date(t.ts).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div>
+        <button class="btn sm pri" onclick="event.stopPropagation();wmsTaskDo('${t.id}')">Done</button></div>`).join('')
+    : '<div class="empty">No open tasks.</div>';
+  drawWmsMap(L);
+}
+function drawWmsMap(list){
+  const cv = $('#wmsMap'); if (!cv) return;
+  const w = cv.clientWidth || 340, h = 210;
+  cv.width = w*devicePixelRatio; cv.height = h*devicePixelRatio;
+  const x = cv.getContext('2d'); x.scale(devicePixelRatio, devicePixelRatio);
+  x.fillStyle = '#0A1730'; x.fillRect(0,0,w,h);
+  const L = list || S.wms, cols = Math.ceil(Math.sqrt(L.length*1.6)) || 1, rows = Math.ceil(L.length/cols);
+  const pad = 12, gw = (w-pad*2)/cols, gh = (h-pad*2-16)/rows;
+  L.forEach((l,i) => {
+    const cx = pad + (i%cols)*gw, cy = pad+16 + Math.floor(i/cols)*gh;
+    const pct = l.cap ? Math.min(1, l.qty/l.cap) : 0;
+    x.fillStyle = 'rgba(255,255,255,.05)'; x.beginPath(); x.roundRect(cx+3, cy+3, gw-8, gh-8, 6); x.fill();
+    const col = pct >= .9 ? '#F25C4D' : pct >= .5 ? '#FFD60A' : pct > 0 ? '#1FBF75' : '#24344F';
+    x.fillStyle = col; x.globalAlpha = pct ? .75 : .3;
+    const fh = (gh-8)*pct;
+    x.beginPath(); x.roundRect(cx+3, cy+3+(gh-8-fh), gw-8, fh || 3, 6); x.fill(); x.globalAlpha = 1;
+    x.fillStyle = '#E8EEF7'; x.font = '600 10px JetBrains Mono'; x.textAlign = 'center';
+    x.fillText(l.code, cx+(gw-8)/2+3, cy+gh/2);
+    x.fillStyle = '#93A2B8'; x.font = '8px Inter';
+    x.fillText(l.qty + '/' + l.cap, cx+(gw-8)/2+3, cy+gh/2+11);
+  });
+  x.fillStyle = 'rgba(255,255,255,.35)'; x.font = '9px JetBrains Mono'; x.textAlign = 'left';
+  x.fillText('WAREHOUSE OCCUPANCY', 10, 14);
+}
+window.wmsSheet = id => {
+  const l = S.wms.find(x => x.id === id); if (!l) return;
+  const p = S.products.find(x => x.id === l.sku);
+  sheet(`<h2 class="sec">${escH(l.code)} — ${escH(l.zone)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(l.kind)}</span>
+      <span class="tag">${l.qty}/${l.cap} sacks</span><span class="tag">max ${l.tiers} tiers</span></div>
+    ${p?`<p class="muted" style="font-size:12.5px">Holding: <b>${escH(p.name)}</b></p>`:'<p class="muted" style="font-size:12.5px">Empty location.</p>'}
+    <label class="f"><span>Assign product</span><select id="wlSku"><option value="">— empty —</option>
+      ${S.products.map(pp=>`<option value="${pp.id}" ${l.sku===pp.id?'selected':''}>${escH(pp.name)}</option>`).join('')}</select></label>
+    <div class="row"><label class="f" style="flex:1"><span>Sacks here</span><input id="wlQty" type="number" value="${l.qty}"></label>
+      <label class="f" style="flex:1"><span>Capacity</span><input id="wlCap" type="number" value="${l.cap}"></label></div>
+    <button class="btn pri w" style="margin-top:10px" onclick="wmsLocSave('${id}')">Save location</button>
+    <button class="btn w" style="margin-top:8px" onclick="wmsMove('${id}')">Transfer stock to another bay</button>`);
+};
+window.wmsLocSave = id => {
+  const l = S.wms.find(x => x.id === id);
+  l.sku = $('#wlSku').value; l.qty = +$('#wlQty').value||0; l.cap = +$('#wlCap').value||0;
+  if (l.qty > l.cap) toast('⚠ Over capacity — check stacking limits');
+  save(); closeSheet(); renderWms(); toast('Location updated');
+};
+window.wmsMove = id => {
+  const from = S.wms.find(x => x.id === id);
+  sheet(`<h2 class="sec">Transfer from ${escH(from.code)}</h2>
+    <label class="f"><span>Move to</span><select id="wmTo">${S.wms.filter(l=>l.id!==id).map(l=>`<option value="${l.id}">${escH(l.code)} — ${l.qty}/${l.cap}</option>`).join('')}</select></label>
+    <label class="f"><span>Sacks to move</span><input id="wmQty" type="number" value="${Math.min(50, from.qty)}"></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="wmsMoveDo('${id}')">Transfer</button>`);
+};
+window.wmsMoveDo = async id => {
+  const from = S.wms.find(x=>x.id===id), to = S.wms.find(x=>x.id===$('#wmTo').value), n = +$('#wmQty').value||0;
+  if (n > from.qty) return toast('Not that many sacks in ' + from.code);
+  if (to.qty + n > to.cap) return toast('⚠ ' + to.code + ' would exceed capacity');
+  from.qty -= n; to.qty += n;
+  if (!to.sku) to.sku = from.sku;
+  if (from.qty === 0) from.sku = '';
+  save(); await audit('wms.transfer', {from:from.code, to:to.code, qty:n});
+  closeSheet(); renderWms(); toast(n + ' sacks moved to ' + to.code);
+};
+window.wmsAddLoc = () => {
+  sheet(`<h2 class="sec">New location</h2>
+    <div class="row"><label class="f" style="flex:1"><span>Code</span><input id="wnCode" placeholder="D-01"></label>
+      <label class="f" style="flex:1"><span>Zone</span><input id="wnZone" placeholder="Bay D"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Type</span><select id="wnKind">${['Floor stack','Pallet rack','Shelf','Hold','Dock'].map(k=>`<option>${k}</option>`).join('')}</select></label>
+      <label class="f" style="flex:1"><span>Capacity</span><input id="wnCap" type="number" value="300"></label></div>
+    <label class="f"><span>Max tiers (stacking limit)</span><input id="wnTier" type="number" value="12"></label>
+    <label class="f"><span>Warehouse</span><select id="wnWh">${S.whs.map(w=>`<option value="${w.id}" ${S.cfg.wh===w.id?'selected':''}>${escH(w.name)}</option>`).join('')}</select></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="wmsLocNew()">Add location</button>`);
+};
+window.wmsLocNew = () => {
+  const o = {id:uid('L'), code:$('#wnCode').value.trim().toUpperCase(), zone:$('#wnZone').value.trim(),
+    kind:$('#wnKind').value, cap:+$('#wnCap').value||0, tiers:+$('#wnTier').value||10, sku:'', qty:0,
+    wh:$('#wnWh').value || S.cfg.wh};
+  if (!o.code) return toast('Location code is required');
+  S.wms.push(o); save(); closeSheet(); renderWms(); toast('Location added');
+};
+window.wmsTaskDo = id => {
+  const t = S.wmsTasks.find(x => x.id === id); t.done = true; save(); renderWms(); toast('Task closed');
+};
+function wmsPutaway(){
+  ensureChain();
+  const open = S.wmsTasks.filter(t => t.kind === 'putaway' && !t.done);
+  if (!open.length) return toast('No stock waiting to be put away');
+  const suggestions = open.map(t => {
+    const free = S.wms.filter(l => l.wh === (t.wh || S.cfg.wh) && (l.cap - l.qty) > 0 && (!l.sku || l.sku === t.sku))
+      .sort((a,b) => (b.cap-b.qty) - (a.cap-a.qty));
+    return {t, loc: free[0]};
+  });
+  sheet(`<h2 class="sec">Putaway suggestions</h2>
+    <p class="muted" style="font-size:12.5px;margin-bottom:8px">Best-fit bay by free space, keeping one variety per bay where possible.</p>
+    ${suggestions.map(s => `<div class="item"><div class="g">
+      <b>${s.t.qty} sacks${s.t.ref?' · '+escH(s.t.ref):''}</b>
+      <small>${s.loc?`→ <b style="color:var(--cyan)">${escH(s.loc.code)}</b> (${s.loc.cap-s.loc.qty} free)`:'⚠ no bay with space — free up capacity'}</small></div>
+      ${s.loc?`<button class="btn sm pri" onclick="wmsPutDo('${s.t.id}','${s.loc.id}')">Put away</button>`:''}</div>`).join('')}`);
+}
+window.wmsPutDo = async (tid, lid) => {
+  const t = S.wmsTasks.find(x=>x.id===tid), l = S.wms.find(x=>x.id===lid);
+  const n = Math.min(t.qty, l.cap - l.qty);
+  l.qty += n; if (!l.sku && t.sku) l.sku = t.sku;
+  t.qty -= n; t.loc = l.code;
+  if (t.qty <= 0) t.done = true;
+  save(); await audit('wms.putaway', {loc:l.code, qty:n});
+  closeSheet(); renderWms(); toast(n + ' sacks put away in ' + l.code);
+};
+function wmsPick(){
+  ensureChain();
+  const lots = (S.lots||[]).slice().sort((a,b) => String(a.milled||'').localeCompare(String(b.milled||'')));
+  const locs = S.wms.filter(l => l.qty > 0 && l.wh === S.cfg.wh);
+  if (!locs.length) return toast('No stock at ' + whName(S.cfg.wh));
+  sheet(`<h2 class="sec">Pick list — FEFO order</h2>
+    <p class="muted" style="font-size:12.5px;margin-bottom:8px">Pick from these bays first so the oldest rice always leaves ahead of the new.</p>
+    ${locs.map((l,i) => {
+      const p = S.products.find(x => x.id === l.sku);
+      return `<div class="item"><span class="tag">${i+1}</span><div class="g">
+        <b>${escH(l.code)} — ${p?escH(p.name):'unassigned'}</b>
+        <small>${l.qty} sacks available · ${escH(l.zone)} · ${escH(l.kind)}</small></div></div>`;
+    }).join('')}
+    <button class="btn pri w" style="margin-top:10px" onclick="wmsPickTask()">Create pick task</button>`);
+}
+window.wmsPickTask = () => {
+  const first = S.wms.find(l => l.qty > 0 && l.wh === S.cfg.wh);
+  S.wmsTasks.push({id:uid('T'), kind:'pick', ref:'PICK-'+new Date().toISOString().slice(11,16).replace(':',''),
+    sku:first.sku, qty:Math.min(50, first.qty), loc:first.code, wh:S.cfg.wh, ts:new Date().toISOString(), done:false});
+  save(); closeSheet(); renderWms(); toast('Pick task created for ' + first.code);
+};
+
+/* ════════════ WAREHOUSES (multi-site) ════════════ */
+const WHTYPES = ['Main warehouse','Branch warehouse','Port / transit shed','Retail outlet','Consignment','Cold / special'];
+function ensureWh(){
+  if (!S.whs) S.whs = [
+    {id:'WH1', code:'MAIN', name:'Main Warehouse — Buru-un', type:'Main warehouse',
+     addr:'Buru-un, Iligan City, Lanao del Norte', lat:8.1961, lon:124.2043,
+     manager:'Ray Engracia', phone:'0905 251 5051', active:true},
+    {id:'WH2', code:'PORT', name:'Port Transit Shed — Iligan Port', type:'Port / transit shed',
+     addr:'Iligan City Port, Barangay Suarez', lat:8.2289, lon:124.2452,
+     manager:'Jun Palacio', phone:'0917 000 0002', active:true},
+    {id:'WH3', code:'RF', name:'Retail Outlet — Poblacion', type:'Retail outlet',
+     addr:'Quezon Ave., Poblacion, Iligan City', lat:8.2280, lon:124.2452,
+     manager:'Aling Nena', phone:'0917 000 0003', active:true}
+  ];
+  // migrate locations created before multi-site existed
+  (S.wms||[]).forEach(l => { if (!l.wh) l.wh = l.zone === 'Retail Front' ? 'WH3' : 'WH1'; });
+  if (!S.whMoves) S.whMoves = [];
+  if (!S.cfg.wh) S.cfg.wh = S.whs[0].id;
+}
+const whOf = id => (S.whs||[]).find(w => w.id === id);
+const whName = id => { const w = whOf(id); return w ? w.name : '—'; };
+const whLocs = id => (S.wms||[]).filter(l => l.wh === id);
+const whStat = id => {
+  const L = whLocs(id);
+  return {locs:L.length, cap:L.reduce((a,l)=>a+(+l.cap||0),0), qty:L.reduce((a,l)=>a+(+l.qty||0),0)};
+};
+
+function renderWh(){
+  ensureChain(); ensureWh();
+  const W = S.whs;
+  const tot = W.reduce((a,w) => { const s = whStat(w.id); return {cap:a.cap+s.cap, qty:a.qty+s.qty}; }, {cap:0,qty:0});
+  $('#whN').textContent = W.filter(w=>w.active).length;
+  $('#whTypes').textContent = [...new Set(W.map(w=>w.type.split(' ')[0]))].join(' · ');
+  $('#whCap').textContent = tot.cap.toLocaleString();
+  $('#whUse').textContent = tot.cap ? Math.round(tot.qty/tot.cap*100) + '% used' : '—';
+  $('#whTransit').textContent = S.whMoves.filter(m => !m.done).length;
+  $('#whList').innerHTML = W.map(w => {
+    const s = whStat(w.id), pct = s.cap ? Math.round(s.qty/s.cap*100) : 0;
+    const act = S.cfg.wh === w.id;
+    return `<div class="item" onclick="whSheet('${w.id}')">
+      <span class="tag ${act?'t-ok':'t-dim'}">${escH(w.code)}</span>
+      <div class="g"><b>${escH(w.name)}${act?' <span class="tag t-ok">active</span>':''}${!w.active?' <span class="tag t-warn">closed</span>':''}</b>
+        <small>${escH(w.type)} · ${s.locs} location(s) · ${s.qty.toLocaleString()}/${s.cap.toLocaleString()} sacks</small>
+        <div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="tag">${pct}%</span></div>`;
+  }).join('');
+  $('#whMoveList').innerHTML = S.whMoves.length ? S.whMoves.slice(0,10).map(m => `
+    <div class="item" onclick="whMoveSheet('${m.id}')">
+      <span class="tag ${m.done?'t-ok':'t-warn'}">${m.done?'✓':'⇢'}</span>
+      <div class="g"><b>${m.qty} sacks · ${escH(whOf(m.from)?whOf(m.from).code:'?')} → ${escH(whOf(m.to)?whOf(m.to).code:'?')}</b>
+        <small>${m.done?'received '+new Date(m.recTs).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+          :'in transit'+(m.veh?' · '+escH((S.fleet.find(v=>v.id===m.veh)||{}).plate||''):'')+' · sent '+new Date(m.ts).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</small></div></div>`).join('')
+    : '<div class="empty">No inter-warehouse transfers yet.</div>';
+  // keep selectors in sync
+  const sel = $('#wmsWh');
+  if (sel){
+    const cur = sel.value || S.cfg.wh;
+    sel.innerHTML = '<option value="ALL">All warehouses</option>' +
+      W.map(w => `<option value="${w.id}" ${cur===w.id?'selected':''}>${escH(w.name)}</option>`).join('');
+  }
+  const hl = $('#branchLbl'); if (hl) hl.textContent = whName(S.cfg.wh).replace(/ —.*/,'');
+}
+window.whSheet = id => {
+  const w = whOf(id); if (!w) return;
+  const s = whStat(id), pct = s.cap ? Math.round(s.qty/s.cap*100) : 0;
+  const locs = whLocs(id);
+  sheet(`<h2 class="sec">${escH(w.name)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(w.code)}</span><span class="tag">${escH(w.type)}</span>
+      <span class="tag ${pct>=90?'t-warn':'t-ok'}">${pct}% full</span>${S.cfg.wh===id?'<span class="tag t-ok">active</span>':''}</div>
+    <p class="muted" style="font-size:12.5px">${escH(w.addr)}<br>Manager: <b>${escH(w.manager)}</b> · ${escH(w.phone)}</p>
+    <div class="grid g3" style="margin:10px 0">
+      <div class="kpi acc-c"><div class="lab">Locations</div><div class="val" style="font-size:20px">${s.locs}</div><div class="sub">bays & racks</div></div>
+      <div class="kpi acc-y"><div class="lab">On hand</div><div class="val" style="font-size:20px">${s.qty.toLocaleString()}</div><div class="sub">sacks</div></div>
+      <div class="kpi acc-g"><div class="lab">Capacity</div><div class="val" style="font-size:20px">${s.cap.toLocaleString()}</div><div class="sub">${(s.cap-s.qty).toLocaleString()} free</div></div>
+    </div>
+    <h2 class="sec" style="font-size:13px">Locations here</h2>
+    ${locs.length?locs.map(l=>{
+      const p = S.products.find(x=>x.id===l.sku), lp = l.cap?Math.round(l.qty/l.cap*100):0;
+      return `<div class="item" onclick="wmsSheet('${l.id}')"><span class="tag">${escH(l.code)}</span>
+        <div class="g"><b>${escH(l.zone)}</b><small>${l.qty}/${l.cap} · ${p?escH(p.name):'empty'}</small>
+        <div class="bar"><i style="width:${lp}%"></i></div></div></div>`;
+    }).join(''):'<div class="empty">No locations yet — add bays for this site.</div>'}
+    <div class="row tight" style="margin-top:12px;flex-wrap:wrap">
+      ${S.cfg.wh!==id?`<button class="btn pri sm" onclick="whActivate('${id}')">Make active</button>`:''}
+      <button class="btn sm" onclick="whEdit('${id}')">Edit site</button>
+      <button class="btn sm" onclick="whMoveNew('${id}')">Transfer stock out</button>
+      ${w.lat?`<button class="btn sm" onclick="window.open('https://www.google.com/maps?q=${w.lat},${w.lon}','_blank')">Map</button>`:''}
+    </div>`);
+};
+window.whActivate = async id => {
+  S.cfg.wh = id; save(); await audit('warehouse.activate', {wh:id});
+  closeSheet(); renderWh(); renderWms(); toast('Active site: ' + whName(id));
+};
+window.whEdit = id => {
+  const w = id ? whOf(id) : {id:'', code:'', name:'', type:'Branch warehouse', addr:'', lat:'', lon:'', manager:'', phone:'', active:true};
+  sheet(`<h2 class="sec">${id?'Edit':'New'} warehouse</h2>
+    <div class="row"><label class="f" style="flex:1"><span>Code</span><input id="whfCode" value="${escH(w.code)}" placeholder="BRN2"></label>
+      <label class="f" style="flex:2"><span>Name</span><input id="whfName" value="${escH(w.name)}" placeholder="Branch Warehouse — Tubod"></label></div>
+    <label class="f"><span>Type</span><select id="whfType">${WHTYPES.map(t=>`<option ${w.type===t?'selected':''}>${t}</option>`).join('')}</select></label>
+    <label class="f"><span>Address</span><textarea id="whfAddr" rows="2">${escH(w.addr)}</textarea></label>
+    <div class="row"><label class="f" style="flex:1"><span>Latitude</span><input id="whfLat" value="${w.lat}" placeholder="8.1961"></label>
+      <label class="f" style="flex:1"><span>Longitude</span><input id="whfLon" value="${w.lon}" placeholder="124.2043"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Manager</span><input id="whfMgr" value="${escH(w.manager)}"></label>
+      <label class="f" style="flex:1"><span>Phone</span><input id="whfPh" value="${escH(w.phone)}"></label></div>
+    <label class="f"><span>Status</span><select id="whfAct"><option value="1" ${w.active?'selected':''}>Open</option><option value="0" ${!w.active?'selected':''}>Closed</option></select></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="whSave('${id||''}')">Save warehouse</button>`);
+};
+window.whSave = async id => {
+  const o = {id: id || uid('WH'), code:$('#whfCode').value.trim().toUpperCase(), name:$('#whfName').value.trim(),
+    type:$('#whfType').value, addr:$('#whfAddr').value.trim(), lat:+$('#whfLat').value||'', lon:+$('#whfLon').value||'',
+    manager:$('#whfMgr').value.trim(), phone:$('#whfPh').value.trim(), active:$('#whfAct').value==='1'};
+  if (!o.code || !o.name) return toast('Code and name are required');
+  const ex = whOf(id);
+  if (ex) Object.assign(ex, o); else S.whs.push(o);
+  save(); await audit('warehouse.save', {code:o.code});
+  closeSheet(); renderWh(); renderWms(); toast('Warehouse saved');
+};
+/* ── inter-warehouse transfer with in-transit state ── */
+window.whMoveNew = fromId => {
+  ensureWh();
+  const from = fromId || S.cfg.wh;
+  const locs = whLocs(from).filter(l => l.qty > 0);
+  if (!locs.length) return toast('No stock at ' + whName(from));
+  sheet(`<h2 class="sec">Transfer between warehouses</h2>
+    <label class="f"><span>From location</span><select id="wtFrom">${locs.map(l=>{
+      const p = S.products.find(x=>x.id===l.sku);
+      return `<option value="${l.id}">${escH(l.code)} — ${l.qty} sacks${p?' · '+escH(p.name):''}</option>`;}).join('')}</select></label>
+    <label class="f"><span>To warehouse</span><select id="wtTo">${S.whs.filter(w=>w.id!==from&&w.active).map(w=>`<option value="${w.id}">${escH(w.name)}</option>`).join('')}</select></label>
+    <label class="f"><span>Sacks</span><input id="wtQty" type="number" value="${Math.min(50, locs[0].qty)}"></label>
+    <label class="f"><span>Vehicle (optional)</span><select id="wtVeh"><option value="">— not assigned —</option>
+      ${S.fleet.map(v=>`<option value="${v.id}">${escH(v.plate)} · ${escH(v.type)} (${v.cap} sk)</option>`).join('')}</select></label>
+    <div class="ai-note"><b>In transit</b>Stock leaves the source immediately and stays “in transit” until someone at the receiving site confirms arrival — so it is never counted twice.</div>
+    <button class="btn pri w" style="margin-top:10px" onclick="whMoveSend('${from}')">Dispatch transfer</button>`);
+};
+window.whMoveSend = async from => {
+  const l = S.wms.find(x => x.id === $('#wtFrom').value), to = $('#wtTo').value, n = +$('#wtQty').value||0;
+  if (!l || n <= 0) return toast('Check the quantity');
+  if (n > l.qty) return toast('Only ' + l.qty + ' sacks at ' + l.code);
+  const veh = $('#wtVeh').value;
+  const v = S.fleet.find(x => x.id === veh);
+  if (v && n > v.cap) toast('⚠ Load exceeds ' + v.plate + ' capacity (' + v.cap + ')');
+  l.qty -= n; const sku = l.sku; if (l.qty === 0) l.sku = '';
+  const m = {id:uid('WM'), from, to, loc:l.code, sku, qty:n, veh, ts:new Date().toISOString(), recTs:'', done:false};
+  S.whMoves.unshift(m); save();
+  await audit('warehouse.transfer.send', {from, to, qty:n});
+  closeSheet(); renderWh(); renderWms();
+  toast(n + ' sacks dispatched to ' + whName(to));
+};
+window.whMoveSheet = id => {
+  const m = S.whMoves.find(x => x.id === id); if (!m) return;
+  const p = S.products.find(x => x.id === m.sku), v = S.fleet.find(x => x.id === m.veh);
+  sheet(`<h2 class="sec">Transfer ${m.done?'received':'in transit'}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${m.qty} sacks</span>
+      <span class="tag">${escH(whOf(m.from)?whOf(m.from).code:'?')} → ${escH(whOf(m.to)?whOf(m.to).code:'?')}</span>
+      ${v?`<span class="tag">${escH(v.plate)}</span>`:''}</div>
+    <p class="muted" style="font-size:12.5px">${p?escH(p.name)+'<br>':''}From ${escH(whName(m.from))} (${escH(m.loc)})<br>
+      To ${escH(whName(m.to))}<br>Dispatched ${new Date(m.ts).toLocaleString('en-PH')}
+      ${m.done?'<br>Received '+new Date(m.recTs).toLocaleString('en-PH'):''}</p>
+    ${!m.done?`<label class="f"><span>Receive into location</span><select id="wrLoc">
+        ${whLocs(m.to).map(l=>`<option value="${l.id}">${escH(l.code)} — ${l.cap-l.qty} free</option>`).join('')||'<option value="">no locations at destination</option>'}</select></label>
+      <button class="btn pri w" style="margin-top:10px" onclick="whMoveReceive('${m.id}')">Confirm arrival</button>`
+      :'<div class="ai-note"><b>Closed</b>This transfer has been received and put away.</div>'}`);
+};
+window.whMoveReceive = async id => {
+  const m = S.whMoves.find(x => x.id === id);
+  const l = S.wms.find(x => x.id === $('#wrLoc').value);
+  if (!l) return toast('Add a location at the destination first');
+  if (l.qty + m.qty > l.cap) return toast('⚠ ' + l.code + ' would exceed capacity');
+  l.qty += m.qty; if (!l.sku) l.sku = m.sku;
+  m.done = true; m.recTs = new Date().toISOString();
+  save(); await audit('warehouse.transfer.receive', {id, to:m.to, qty:m.qty});
+  closeSheet(); renderWh(); renderWms(); toast(m.qty + ' sacks received at ' + whName(m.to));
+};
+
+/* wiring */
+$('#ovsAdd').onclick = () => ovsEdit('');
+$('#impAdd').onclick = () => impNew('');
+$('#unlAdd').onclick = () => unlNew('');
+$('#tmsAdd').onclick = () => tmsEdit('');
+$('#wmsAdd').onclick = () => wmsAddLoc();
+$('#gpsStart').onclick = gpsStart;
+$('#gpsStop').onclick = gpsStop;
+$('#gpsPull').onclick = gpsPull;
+$('#wmsPutaway').onclick = wmsPutaway;
+$('#wmsPick').onclick = wmsPick;
+
+/* ════════════════════════════════════════════════════════════════
+   DELIVERY AGENT PORTAL — reachable from the login screen, no staff
+   account needed. A rider registers, an owner approves them in
+   Distribute → Agents, then the rider logs in on their own phone with
+   phone + code to see assigned deliveries and share live location.
+   ════════════════════════════════════════════════════════════════ */
+const AREA_LIST = ['Buru-un','Poblacion','Tibanga','Pala-o','Ma. Cristina','Suarez','Tubod','Other (Iligan)'];
+function agentSession(){ try { return JSON.parse(localStorage.getItem('nexrice.agent')||'null'); } catch(e){ return null; } }
+function agentSave(a){ localStorage.setItem('nexrice.agent', JSON.stringify(a)); }
+function agentClear(){ localStorage.removeItem('nexrice.agent'); }
+async function agentApi(params, isPost){
+  // The rider's phone may never have logged in as staff, so this can't rely
+  // on S.cfg (set only after Admin → Backend). It uses its own small public
+  // config — the SAME api_url + SHOP_KEY pasted into NEXSHOP — with a
+  // fallback to S.cfg for a staff device that's already configured.
+  const gasUrl = AGENT_CFG.gas || (typeof S !== 'undefined' && S.cfg && S.cfg.gas) || '';
+  const key = AGENT_CFG.shopKey || (typeof S !== 'undefined' && S.cfg && S.cfg.key) || '';
+  if (!gasUrl) throw new Error('offline');
+  const qs = new URLSearchParams({key, ...params});
+  const url = gasUrl + (isPost ? '' : '?' + qs.toString());
+  const r = isPost
+    ? await fetch(gasUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: qs})
+    : await fetch(url);
+  return r.json();
+}
+
+window.agentPortal = () => {
+  const a = agentSession();
+  if (a && a.status === 'approved') return agentHome();
+  if (a && a.status === 'pending') return agentPendingScreen();
+  sheet(`<h2 class="sec">Delivery rider portal</h2>
+    <p class="muted" style="margin:-4px 0 12px">Register to deliver NEXSHOP orders, or log in if you already have a rider code.</p>
+    <button class="btn pri w" onclick="agentRegisterForm()">Register as a rider</button>
+    <button class="btn w" style="margin-top:8px" onclick="agentLoginForm()">Log in with phone + code</button>`);
+};
+window.agentRegisterForm = () => {
+  sheet(`<h2 class="sec">Rider registration</h2>
+    <label class="f"><span>Full name</span><input id="afName" placeholder="Juan dela Cruz"></label>
+    <label class="f"><span>Mobile number</span><input id="afPhone" inputmode="tel" placeholder="09xx xxx xxxx"></label>
+    <label class="f"><span>Vehicle</span><select id="afVeh">${['Motorcycle','Tricycle','E-bike','Car','Van'].map(v=>`<option>${v}</option>`).join('')}</select></label>
+    <label class="f"><span>Plate number (optional)</span><input id="afPlate" placeholder="e.g. ABC 1234"></label>
+    <label class="f"><span>Areas you can cover</span>
+      <div class="row tight" style="flex-wrap:wrap" id="afAreas">${AREA_LIST.map(a=>`<button type="button" class="btn sm" data-a="${a}" onclick="this.classList.toggle('pri')">${a}</button>`).join('')}</div>
+    </label>
+    <button class="btn pri w" style="margin-top:12px" onclick="agentSubmitRegister()">Submit for approval</button>`);
+};
+window.agentSubmitRegister = async () => {
+  const name = $('#afName').value.trim(), phone = $('#afPhone').value.trim();
+  if (name.length < 2) return toast('Enter your full name');
+  if (!/^0?9\d{9}$/.test(phone.replace(/[\s-]/g,''))) return toast('Check the mobile number (09xx…)');
+  const areas = $$('#afAreas button.pri').map(b => b.dataset.a);
+  const payload = {name, phone, vehicle: $('#afVeh').value, plate: $('#afPlate').value.trim(), areas};
+  try {
+    const j = await agentApi({action:'agent_register', payload: JSON.stringify(payload)}, true);
+    if (!j.ok) return toast(j.error || 'Could not register — try again.');
+    agentSave({name, phone, vehicle: payload.vehicle, plate: payload.plate, areas, status:'pending', code: j.code, id: j.id});
+    agentPendingScreen(j.code);
+  } catch (e) { toast('No connection — try again once you\u2019re online.'); }
+};
+window.agentPendingScreen = (code) => {
+  const a = agentSession();
+  sheet(`<h2 class="sec">Registration received 🎉</h2>
+    <p class="muted" style="margin:-4px 0 10px">Salamat, ${esc((a&&a.name||'').split(' ')[0]||'')}! Your account is <b>pending approval</b>.
+    Your rider code is <b class="mono">${esc(code||(a&&a.code)||'')}</b> — keep it to log in.
+    The store will approve you shortly; check back and log in once you get a text.</p>
+    <button class="btn pri w" onclick="agentCheckApproval()">↻ Check approval status</button>
+    <button class="btn w" style="margin-top:8px" onclick="closeSheet()">Close</button>`);
+};
+window.agentCheckApproval = async () => {
+  const a = agentSession(); if (!a) return agentPortal();
+  try {
+    const j = await agentApi({action:'agent_login', phone:a.phone, code:a.code});
+    if (j.agent){ agentSave({...a, ...j.agent}); if (j.agent.status === 'approved'){ toast('✓ You\u2019re approved!'); return agentHome(); } }
+    toast('Still pending — check back later');
+  } catch(e){ toast('No connection'); }
+};
+window.agentLoginForm = () => {
+  sheet(`<h2 class="sec">Rider log in</h2>
+    <label class="f"><span>Mobile number</span><input id="alPhone" inputmode="tel" placeholder="09xx xxx xxxx"></label>
+    <label class="f"><span>Rider code</span><input id="alCode" class="mono" placeholder="6-digit code"></label>
+    <button class="btn pri w" style="margin-top:12px" onclick="agentSubmitLogin()">Log in</button>`);
+};
+window.agentSubmitLogin = async () => {
+  const phone = $('#alPhone').value.trim(), code = $('#alCode').value.trim();
+  if (!phone || !code) return toast('Enter your number and code');
+  try {
+    const j = await agentApi({action:'agent_login', phone, code});
+    if (!j.agent) return toast(j.error || 'Not found — check your number and code.');
+    agentSave({...j.agent, code});
+    if (j.agent.status !== 'approved') return agentPendingScreen(code);
+    agentHome();
+  } catch(e){ toast('No connection — try again once you\u2019re online.'); }
+};
+window.agentLogout = () => { agentGpsStop(); agentClear(); closeSheet(); toast('Logged out'); };
+
+/* ── agent home: assigned deliveries + live location toggle ── */
+let AGENT_DELIVS = [];
+window.agentHome = async () => {
+  const a = agentSession(); if (!a) return agentPortal();
+  sheet(`<h2 class="sec">Hi, ${esc(a.name.split(' ')[0])} 👋<span class="spacer"></span>
+      <button class="btn sm" onclick="agentLogout()">Log out</button></h2>
+    <div class="row tight" style="margin-bottom:10px"><span class="tag t-ok">${esc(a.vehicle)}</span>
+      ${a.plate?`<span class="tag">${esc(a.plate)}</span>`:''}<span class="tag">${(a.areas||[]).length} area(s)</span></div>
+    <div id="agentGpsRow" class="ai-note" style="margin-bottom:10px"></div>
+    <h2 class="sec" style="font-size:13px">Your deliveries<span class="spacer"></span><button class="btn sm" onclick="agentRefresh()">↻ Refresh</button></h2>
+    <div id="agentDelivList"><div class="empty">Loading…</div></div>`);
+  agentPaintGpsRow();
+  await agentRefresh();
+};
+window.agentRefresh = async () => {
+  const a = agentSession(); if (!a) return;
+  try {
+    const j = await agentApi({action:'agent_deliveries', phone:a.phone, code:a.code});
+    AGENT_DELIVS = j.deliveries || [];
+  } catch(e){ AGENT_DELIVS = []; }
+  const host = $('#agentDelivList'); if (!host) return;
+  host.innerHTML = AGENT_DELIVS.length ? AGENT_DELIVS.map(o => `
+    <div class="item">
+      <span class="tag ${o.status==='out'?'t-ok':'t-dim'}">${o.status==='out'?'On the way':'Packing'}</span>
+      <div class="g"><b>${esc(o.order_no)} · ${esc(o.name)}</b>
+        <small>${esc(o.area)}${o.address?' · '+esc(o.address):''} · ${(o.items||[]).reduce((s,i)=>s+Number(i.qty),0)} item(s)
+        · ${o.payment_method==='cod'?'COD ₱'+Number(o.total).toLocaleString():esc((o.payment_method||'').toUpperCase())}</small></div>
+      <button class="btn sm" onclick="agentDeliveryDetail('${esc(o.order_no)}')">Open</button>
+    </div>`).join('') : '<div class="empty">No deliveries assigned to you right now.</div>';
+};
+window.agentDeliveryDetail = (no) => {
+  const o = AGENT_DELIVS.find(x => x.order_no === no); if (!o) return;
+  sheet(`<h2 class="sec">${esc(o.order_no)}</h2>
+    <p class="muted" style="font-size:12.5px">${esc(o.name)} · ${esc(o.phone||'')}<br>${esc(o.area)}${o.address?' — '+esc(o.address):''}</p>
+    <table class="tbl"><tbody>${(o.items||[]).map(i=>`<tr><td>${esc(i.name)}</td><td class="num">${i.qty}</td></tr>`).join('')}
+      <tr><td><b>Total</b></td><td class="num"><b>${Pk(o.total)}</b></td></tr></tbody></table>
+    ${o.payment_method==='cod'?`<div class="ai-note" style="margin-top:8px"><b>Collect on delivery</b>${Pk(o.total)} in cash.</div>`:''}
+    <div class="row tight" style="margin-top:12px">
+      <button class="btn pri" onclick="agentNavigate('${esc(o.area)}')">🧭 Navigate</button>
+      ${o.phone?`<button class="btn" onclick="window.open('tel:${esc(o.phone)}')">📞 Call</button>`:''}
+    </div>
+    <button class="btn acc w" style="margin-top:10px" onclick="agentMarkDelivered('${esc(o.order_no)}')">✓ I\u2019ve delivered this</button>
+    <p class="muted" style="font-size:11px;margin-top:6px">This notifies the store — they\u2019ll finalize it in NEXRICE.</p>
+    <button class="btn w" style="margin-top:8px" onclick="agentHome()">‹ Back to deliveries</button>`);
+};
+window.agentNavigate = (area) => {
+  const c = SHOP_AREA_COORDS[area] || SHOP_AREA_COORDS['Other (Iligan)'];
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${c[0]},${c[1]}`, '_blank');
+};
+window.agentMarkDelivered = async (no) => {
+  const a = agentSession();
+  try {
+    const j = await agentApi({action:'agent_confirm', payload: JSON.stringify({phone:a.phone, code:a.code, order:no})}, true);
+    if (j.confirmed){ toast('✓ Delivery confirmed — the store will finalize it'); agentHome(); }
+    else toast(j.error || 'Could not confirm');
+  } catch(e){ toast('No connection — try again once you\u2019re online.'); }
+};
+
+/* ── live location sharing (this device's own GPS, agent-scoped) ── */
+let AGENT_WATCH = null;
+function agentPaintGpsRow(){
+  const el = $('#agentGpsRow'); if (!el) return;
+  if (AGENT_WATCH != null){
+    el.innerHTML = `<b>📍 Sharing your location</b> — customers can see you on the way.
+      <button class="btn sm" style="margin-top:6px" onclick="agentGpsStop()">Stop sharing</button>`;
+  } else {
+    el.innerHTML = `<b>Location off</b> — turn it on when you head out so customers can track your delivery.
+      <button class="btn sm pri" style="margin-top:6px" onclick="agentGpsStart()">📍 Start sharing</button>`;
+  }
+}
+window.agentGpsStart = () => {
+  if (!navigator.geolocation) return toast('This device has no GPS');
+  const a = agentSession(); if (!a) return;
+  AGENT_WATCH = navigator.geolocation.watchPosition(async pos => {
+    const {latitude:lat, longitude:lon, speed, heading} = pos.coords;
+    try {
+      await agentApi({action:'gps', dev:'AGENT:'+a.phone, code:a.code, lat, lon,
+        spd:(speed||0)*3.6, hdg:heading||0, ts:new Date().toISOString()}, true);
+    } catch(e){}
+  }, err => toast('GPS: ' + err.message), {enableHighAccuracy:true, maximumAge:5000, timeout:15000});
+  agentPaintGpsRow(); toast('📍 Sharing your location');
+};
+window.agentGpsStop = () => {
+  if (AGENT_WATCH != null){ navigator.geolocation.clearWatch(AGENT_WATCH); AGENT_WATCH = null; agentPaintGpsRow(); }
+};
+
+/* barangay centroid lookup — mirrors the coords used by the route optimiser */
+const SHOP_AREA_COORDS = {
+  'Buru-un':[8.15,124.19], 'Poblacion':[8.228,124.245], 'Tibanga':[8.245,124.238],
+  'Pala-o':[8.235,124.24], 'Ma. Cristina':[8.18,124.21], 'Suarez':[8.223,124.24],
+  'Tubod':[8.15,124.24], 'Other (Iligan)':[8.228,124.245]
+};
+
+$('#agentPortalLink').onclick = agentPortal;
+
+$('#whAdd').onclick = () => whEdit('');
+$('#whMoveBtn').onclick = () => whMoveNew('');
+$('#wmsWh').onchange = () => renderWms();
+
+/* ════════════════════════════════════════════════════════════════
+   SALES & DISTRIBUTION — order-to-cash · pricing tiers · sales
+   team & quotas · route (van) selling
+   ════════════════════════════════════════════════════════════════ */
+const SOSTAGES = [
+  ['DRAFT',    'Draft',             'Being written up'],
+  ['CONFIRMED','Confirmed',         'Customer committed — credit checked'],
+  ['ALLOCATED','Stock allocated',   'Sacks reserved in the warehouse'],
+  ['PICKED',   'Picked & loaded',   'Pulled FEFO and loaded on the truck'],
+  ['DELIVERED','Delivered',         'Signed for by the customer'],
+  ['INVOICED', 'Invoiced',          'Sales invoice issued'],
+  ['PAID',     'Paid',              'Settled in full']
+];
+const SOI = k => SOSTAGES.findIndex(s => s[0] === k);
+const SOG = k => { const s = SOSTAGES.find(x => x[0] === k) || SOSTAGES[0]; return {k:s[0], l:s[1], d:s[2]}; };
+const CHANNELS = ['Wholesale','Distributor','Institutional','Retail','Online','B2B partner'];
+
+function ensureSD(){
+  ensureChain(); ensureWh();
+  if (!S.tiers) S.tiers = [
+    {id:'T1', name:'Retail',        kind:'markup', pct:0,   min:1,  note:'Walk-in counter price — the list price.'},
+    {id:'T2', name:'Wholesale',     kind:'off',    pct:4,   min:20, note:'20+ sacks per order.'},
+    {id:'T3', name:'Distributor',   kind:'off',    pct:7.5, min:100,note:'Accredited distributors, 100+ sacks.'},
+    {id:'T4', name:'Institutional', kind:'off',    pct:5,   min:50, note:'Canteens, schools, LGU contracts.'}
+  ];
+  if (!S.breaks) S.breaks = [
+    {id:'B1', qty:50,  pct:1.5}, {id:'B2', qty:150, pct:3}, {id:'B3', qty:300, pct:5}
+  ];
+  if (!S.reps) S.reps = [
+    {id:'R1', name:'Ador Villanueva', phone:'0917 000 0011', area:'Buru-un · Suarez · Ma. Cristina', quota:900,  comm:1.5, active:true},
+    {id:'R2', name:'Lita Domingo',    phone:'0917 000 0012', area:'Poblacion · Pala-o · Tibanga',    quota:1200, comm:1.5, active:true}
+  ];
+  if (!S.so)      S.so = [];
+  if (!S.routes)  S.routes = [
+    {id:'RT1', name:'Buru-un loop',    day:'Mon · Thu', rep:'R1', veh:'VH2', stops:['Aling Nena Sari-Sari','Buru-un Bakeshop','Purok 5 Store'], load:120},
+    {id:'RT2', name:'Poblacion market',day:'Tue · Fri', rep:'R2', veh:'VH1', stops:['Iligan Public Market — Stall 42','Suy Sing Mini Mart'], load:200}
+  ];
+  if (!S.runs)    S.runs = [];
+  // give existing customers a tier if they have none
+  (S.customers||[]).forEach(c => { if (!c.tier) c.tier = c.type && /whole|distrib/i.test(c.type) ? 'T2' : 'T1'; });
+}
+
+/* ── pricing engine ── */
+function tierOf(cid){ const c = (S.customers||[]).find(x => x.id === cid); return S.tiers.find(t => t.id === (c ? c.tier : 'T1')) || S.tiers[0]; }
+function priceFor(sku, qty, cid){
+  const p = S.products.find(x => x.id === sku); if (!p) return {unit:0, off:0, why:''};
+  const t = tierOf(cid);
+  let off = t.kind === 'off' && qty >= (t.min||1) ? +t.pct : 0;
+  const br = S.breaks.filter(b => qty >= b.qty).sort((a,b) => b.qty - a.qty)[0];
+  if (br) off = Math.max(off, +br.pct);
+  const unit = Math.round(p.price * (100 - off)) / 100;
+  const floor = (+p.cost || 0) * 1.03;
+  return {unit, off, base:p.price, below: unit < floor, floor,
+          why: (off ? t.name + (br && br.pct >= off ? ' + volume break ≥' + br.qty : '') + ' −' + off + '%' : t.name + ' list')};
+}
+
+/* ── SALES ORDERS ── */
+function renderSO(){
+  ensureSD();
+  const L = S.so, open = L.filter(o => !['PAID','CANCELLED'].includes(o.stage));
+  $('#soOpen').textContent = open.length;
+  $('#soSacks').textContent = open.reduce((a,o) => a + o.lines.reduce((x,l) => x+l.qty, 0), 0).toLocaleString() + ' sacks';
+  $('#soVal').textContent = Pk(open.reduce((a,o) => a + o.total, 0));
+  const due = L.filter(o => o.stage === 'INVOICED');
+  $('#soDue').textContent = Pk(due.reduce((a,o) => a + o.total, 0));
+  $('#soDueN').textContent = due.length + ' invoice(s) unpaid';
+  $('#soList').innerHTML = L.length ? L.slice(0,40).map(o => {
+    const g = SOG(o.stage), pct = Math.round((SOI(o.stage)+1)/SOSTAGES.length*100);
+    const bo = (o.lines||[]).some(l => l.short > 0);
+    return `<div class="item" onclick="soSheet('${o.id}')">
+      <div class="g"><b>${escH(o.ref)} · ${escH(o.custName)}${bo?' <span class="tag t-warn">backorder</span>':''}</b>
+        <small>${o.lines.reduce((a,l)=>a+l.qty,0)} sacks · ${Pk(o.total)} · ${escH(g.l)} · ${escH(o.channel)}</small>
+        <div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="tag ${o.stage==='PAID'?'t-ok':''}">${pct}%</span></div>`;
+  }).join('') : '<div class="empty">No sales orders yet. Tap “+ Sales order”.</div>';
+}
+window.soNew = () => {
+  ensureSD();
+  sheet(`<h2 class="sec">New sales order</h2>
+    <label class="f"><span>Customer</span><select id="soCust" onchange="soLineRefresh()">
+      ${S.customers.map(c=>`<option value="${c.id}">${escH(c.name)} — ${escH(c.area||'')}</option>`).join('')}</select></label>
+    <div class="row"><label class="f" style="flex:1"><span>Channel</span><select id="soChan">${CHANNELS.map(c=>`<option>${c}</option>`).join('')}</select></label>
+      <label class="f" style="flex:1"><span>Sales rep</span><select id="soRep">${S.reps.filter(r=>r.active).map(r=>`<option value="${r.id}">${escH(r.name)}</option>`).join('')}</select></label></div>
+    <label class="f"><span>Ship from</span><select id="soWh">${S.whs.filter(w=>w.active).map(w=>`<option value="${w.id}" ${S.cfg.wh===w.id?'selected':''}>${escH(w.name)}</option>`).join('')}</select></label>
+    <div class="row"><label class="f" style="flex:2"><span>Product</span><select id="soSku" onchange="soLineRefresh()">
+      ${S.products.map(p=>`<option value="${p.id}">${escH(p.name)} — ${p.qty} on hand</option>`).join('')}</select></label>
+      <label class="f" style="flex:1"><span>Sacks</span><input id="soQty" type="number" value="20" oninput="soLineRefresh()"></label></div>
+    <div id="soPricing" class="ai-note"></div>
+    <button class="btn sm" onclick="soAddLine()">+ Add line</button>
+    <div id="soLines" style="margin-top:8px"></div>
+    <label class="f"><span>Delivery date</span><input id="soDate" type="date" value="${new Date(Date.now()+864e5).toISOString().slice(0,10)}"></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="soSave()">Create order</button>`);
+  window._soLines = [];
+  soLineRefresh();
+};
+window.soLineRefresh = () => {
+  const sku = $('#soSku').value, qty = +$('#soQty').value||0, cid = $('#soCust').value;
+  const pr = priceFor(sku, qty, cid), p = S.products.find(x=>x.id===sku);
+  $('#soPricing').innerHTML = `<b>Price</b>${escH(pr.why)} → <b>${P(pr.unit)}</b>/sack
+    ${pr.off?` <span class="muted">(list ${P(pr.base)})</span>`:''} · line ${Pk(pr.unit*qty)}
+    ${pr.below?'<br><span style="color:var(--red,#E5484D)">⚠ below the 3% margin floor — needs approval</span>':''}
+    ${p && qty > p.qty?`<br><span style="color:var(--yellow)">⚠ only ${p.qty} on hand — ${qty-p.qty} will backorder</span>`:''}`;
+  const L = window._soLines||[];
+  $('#soLines').innerHTML = L.map((l,i)=>`<div class="item"><div class="g"><b>${escH(l.name)}</b>
+    <small>${l.qty} × ${P(l.unit)} = ${Pk(l.qty*l.unit)}${l.off?' · −'+l.off+'%':''}</small></div>
+    <button class="btn sm" onclick="soDelLine(${i})">✕</button></div>`).join('');
+};
+window.soAddLine = () => {
+  const sku = $('#soSku').value, qty = +$('#soQty').value||0, cid = $('#soCust').value;
+  if (qty <= 0) return toast('Quantity must be more than zero');
+  const p = S.products.find(x=>x.id===sku), pr = priceFor(sku, qty, cid);
+  window._soLines = window._soLines || [];
+  window._soLines.push({sku, name:p.name, qty, unit:pr.unit, off:pr.off, cost:+p.cost||0, short:0});
+  soLineRefresh(); toast(p.name + ' added');
+};
+window.soDelLine = i => { window._soLines.splice(i,1); soLineRefresh(); };
+window.soSave = async () => {
+  const lines = window._soLines || [];
+  if (!lines.length) return toast('Add at least one line');
+  const cid = $('#soCust').value, c = S.customers.find(x=>x.id===cid);
+  const total = lines.reduce((a,l)=>a+l.qty*l.unit,0);
+  if (c && c.limit && (c.balance||0) + total > c.limit)
+    toast('⚠ Over credit limit — ' + Pk((c.balance||0)+total) + ' of ' + Pk(c.limit));
+  const o = {id:uid('SO'), ref:'SO-'+today().replace(/-/g,'')+'-'+String(S.so.length+1).padStart(2,'0'),
+    cust:cid, custName:c?c.name:'—', channel:$('#soChan').value, rep:$('#soRep').value, wh:$('#soWh').value,
+    lines, total, date:today(), deliver:$('#soDate').value, stage:'DRAFT',
+    history:[{stage:'DRAFT', ts:new Date().toISOString()}]};
+  S.so.unshift(o); save(); await audit('so.create', {ref:o.ref, total});
+  closeSheet(); renderSO(); toast('Sales order ' + o.ref + ' created');
+};
+window.soSheet = id => {
+  const o = S.so.find(x=>x.id===id); if (!o) return;
+  const idx = SOI(o.stage), nxt = SOSTAGES[idx+1];
+  const rep = S.reps.find(r=>r.id===o.rep);
+  sheet(`<h2 class="sec">${escH(o.ref)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(o.channel)}</span>
+      <span class="tag">${escH(whName(o.wh))}</span>${rep?`<span class="tag">${escH(rep.name)}</span>`:''}</div>
+    <p class="muted" style="font-size:12.5px">${escH(o.custName)} · deliver ${o.deliver||'—'}</p>
+    <table class="tbl"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Amount</th></tr></thead>
+      <tbody>${o.lines.map(l=>`<tr><td>${escH(l.name)}${l.short?` <span class="tag t-warn">${l.short} short</span>`:''}</td>
+        <td class="num">${l.qty}</td><td class="num">${P(l.unit)}</td><td class="num">${Pk(l.qty*l.unit)}</td></tr>`).join('')}
+      <tr><td><b>Total</b></td><td class="num"><b>${o.lines.reduce((a,l)=>a+l.qty,0)}</b></td><td></td><td class="num"><b>${Pk(o.total)}</b></td></tr></tbody></table>
+    <h2 class="sec" style="font-size:13px;margin-top:12px">Progress</h2>
+    <div class="tl">${SOSTAGES.map((s,n)=>{
+      const h=(o.history||[]).find(x=>x.stage===s[0]);
+      return `<div class="ev ${n<idx?'done':n===idx?'now':''}"><b>${s[1]}</b><small>${h?new Date(h.ts).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):s[2]}</small></div>`;
+    }).join('')}</div>
+    ${nxt?`<button class="btn pri w" style="margin-top:12px" onclick="soAdvance('${o.id}')">Advance → ${nxt[1]}</button>`:
+      '<div class="ai-note" style="margin-top:12px"><b>Closed</b>Paid in full.</div>'}
+    <button class="btn w" style="margin-top:8px" onclick="soDoc('${o.id}')">📄 Preview / print order</button>`);
+};
+window.soAdvance = async id => {
+  const o = S.so.find(x=>x.id===id), idx = SOI(o.stage), nxt = SOSTAGES[idx+1];
+  if (!nxt) return;
+  if (nxt[0] === 'ALLOCATED'){
+    o.lines.forEach(l => {
+      const p = S.products.find(x=>x.id===l.sku);
+      const avail = p ? +p.qty||0 : 0;
+      l.short = Math.max(0, l.qty - avail);
+    });
+    const shorts = o.lines.filter(l=>l.short>0);
+    if (shorts.length) toast('⚠ ' + shorts.length + ' line(s) backordered');
+  }
+  if (nxt[0] === 'PICKED'){
+    o.lines.forEach(l => {
+      const take = l.qty - (l.short||0);
+      const p = S.products.find(x=>x.id===l.sku);
+      if (p) p.qty = Math.max(0, (+p.qty||0) - take);
+      // pull FEFO lots
+      let left = take;
+      (S.lots||[]).filter(x=>x.sku===l.sku).sort((a,b)=>String(a.milled).localeCompare(String(b.milled))).forEach(lot=>{
+        if (left<=0) return; const t = Math.min(lot.qty,left); lot.qty -= t; left -= t;
+      });
+      S.lots = (S.lots||[]).filter(x=>x.qty>0);
+      // relieve a warehouse bay
+      const bay = S.wms.find(b => b.wh === o.wh && b.sku === l.sku && b.qty > 0) || S.wms.find(b => b.wh === o.wh && b.qty > 0);
+      if (bay) bay.qty = Math.max(0, bay.qty - take);
+      S.moves.push({id:uid('m'), ts:new Date().toISOString(), sku:l.sku, name:l.name, qty:-take,
+        from:whName(o.wh), to:'SO ' + o.ref, ref:o.ref, by:ME?ME.u:'system'});
+    });
+    S.wmsTasks.push({id:uid('T'), kind:'pick', ref:o.ref, sku:o.lines[0].sku,
+      qty:o.lines.reduce((a,l)=>a+(l.qty-(l.short||0)),0), loc:'', wh:o.wh, ts:new Date().toISOString(), done:true});
+  }
+  if (nxt[0] === 'INVOICED'){
+    const sale = {id:'SI-'+today().replace(/-/g,'')+'-SO'+String(S.sales.length+1).padStart(3,'0'),
+      date:today(), ts:new Date().toISOString(),
+      lines:o.lines.map(l=>({sku:l.sku, name:l.name, price:l.unit, cost:l.cost, qty:l.qty-(l.short||0), kg:50})),
+      sub:o.total, disc:0, vat:0, total:o.total, cost:o.lines.reduce((a,l)=>a+(l.qty-(l.short||0))*l.cost,0),
+      cust:o.cust, custName:o.custName, pay:'Credit (terms)', paid:false, by:ME?ME.u:'system', ref:o.ref};
+    S.sales.push(sale); enqueue('sales', sale);
+    const c = S.customers.find(x=>x.id===o.cust);
+    if (c) c.balance = (+c.balance||0) + o.total;
+    o.invoice = sale.id;
+  }
+  if (nxt[0] === 'PAID'){
+    const c = S.customers.find(x=>x.id===o.cust);
+    if (c) c.balance = Math.max(0, (+c.balance||0) - o.total);
+    const s = S.sales.find(x=>x.id===o.invoice); if (s) s.paid = true;
+  }
+  o.stage = nxt[0];
+  (o.history = o.history||[]).push({stage:nxt[0], ts:new Date().toISOString()});
+  save(); await audit('so.stage', {ref:o.ref, stage:nxt[0]});
+  soSheet(id); renderSO(); renderRep();
+};
+window.soDoc = id => {
+  const o = S.so.find(x=>x.id===id);
+  const biz = (S.cfg.name)||'NEXRICE Grains Trading';
+  sheet(`<h2 class="sec">Sales order<span class="spacer"></span>
+      <button class="btn sm" onclick="soSheet('${id}')">‹ Back</button>
+      <button class="btn sm pri" onclick="printDoc()">🖨 Print / PDF</button></h2>
+    <div class="docpaper" id="docPaper">
+      <div class="dochead"><div style="display:flex;gap:10px;align-items:center"><div class="dochex"></div>
+        <div><h4>${escH(biz)}</h4><div style="font-size:10px;color:#5A6B84;letter-spacing:.08em">PRECISION · SCALE · CONTROL</div></div></div>
+        <div class="docmeta"><b style="color:#0A1F44;font-size:13px">SALES ORDER</b><br>No. ${escH(o.ref)}<br>Date: ${o.date}</div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px">
+        <div><span style="color:#5A6B84;font-size:10px;letter-spacing:.1em">SOLD TO</span><br><b>${escH(o.custName)}</b></div>
+        <div style="text-align:right"><span style="color:#5A6B84;font-size:10px;letter-spacing:.1em">SHIP FROM</span><br><b>${escH(whName(o.wh))}</b></div></div>
+      <table><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Amount</th></tr></thead>
+        <tbody>${o.lines.map(l=>`<tr><td>${escH(l.name)}</td><td class="num">${l.qty}</td><td class="num">${P(l.unit)}</td><td class="num">${Pk(l.qty*l.unit)}</td></tr>`).join('')}
+        <tr><td><b>TOTAL</b></td><td class="num"><b>${o.lines.reduce((a,l)=>a+l.qty,0)}</b></td><td></td><td class="num"><b>${Pk(o.total)}</b></td></tr></tbody></table>
+      <div class="docfoot">Delivery on or before ${o.deliver||'—'}. Prices VAT-exempt (rice, NIRC Sec. 109(A)). Goods remain the property of ${escH(biz)} until paid in full.</div>
+    </div>`);
+};
+
+/* ── PRICING ── */
+function renderPrice2(){
+  ensureSD();
+  $('#prTiers').innerHTML = S.tiers.map(t => `<div class="item" onclick="tierEdit('${t.id}')">
+    <span class="tag ${t.pct?'t-ok':'t-dim'}">${t.pct?'−'+t.pct+'%':'list'}</span>
+    <div class="g"><b>${escH(t.name)}</b><small>${escH(t.note)}${t.min>1?' · min '+t.min+' sacks':''}</small></div>
+    <span class="tag">${(S.customers||[]).filter(c=>c.tier===t.id).length} cust</span></div>`).join('');
+  $('#prBreaks').innerHTML = S.breaks.sort((a,b)=>a.qty-b.qty).map(b => `<div class="item">
+    <span class="tag">≥${b.qty}</span><div class="g"><b>−${b.pct}%</b><small>volume break on any single line</small></div>
+    <button class="btn sm" onclick="breakDel('${b.id}')">✕</button></div>`).join('');
+  const p = S.products[0];
+  if (p) $('#prPreview').innerHTML = S.tiers.map(t => {
+    const fake = {tier:t.id};
+    const off = t.kind==='off' ? t.pct : 0;
+    const unit = Math.round(p.price*(100-off))/100;
+    const marg = p.cost ? ((unit-p.cost)/unit*100) : 0;
+    return `<div class="item"><span class="tag">${escH(t.name)}</span><div class="g">
+      <b>${P(unit)}</b><small>${escH(p.name)} · margin ${marg.toFixed(1)}%${marg<3?' ⚠':''}</small></div></div>`;
+  }).join('');
+}
+window.tierEdit = id => {
+  const t = id ? S.tiers.find(x=>x.id===id) : {id:'', name:'', kind:'off', pct:5, min:20, note:''};
+  sheet(`<h2 class="sec">${id?'Edit':'New'} price tier</h2>
+    <label class="f"><span>Tier name</span><input id="tfName" value="${escH(t.name)}"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Discount off list %</span><input id="tfPct" type="number" step="0.5" value="${t.pct}"></label>
+      <label class="f" style="flex:1"><span>Min sacks</span><input id="tfMin" type="number" value="${t.min}"></label></div>
+    <label class="f"><span>Note</span><input id="tfNote" value="${escH(t.note)}"></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="tierSave('${id||''}')">Save tier</button>`);
+};
+window.tierSave = async id => {
+  const o = {id:id||uid('T'), name:$('#tfName').value.trim(), kind:'off',
+    pct:+$('#tfPct').value||0, min:+$('#tfMin').value||1, note:$('#tfNote').value.trim()};
+  if (!o.name) return toast('Tier name required');
+  const i = S.tiers.findIndex(x=>x.id===id);
+  if (i>=0) S.tiers[i] = o; else S.tiers.push(o);
+  save(); await audit('tier.save', {name:o.name, pct:o.pct});
+  closeSheet(); renderPrice2(); toast('Price tier saved');
+};
+window.breakAdd = () => {
+  sheet(`<h2 class="sec">New volume break</h2>
+    <div class="row"><label class="f" style="flex:1"><span>From sacks</span><input id="bkQty" type="number" value="500"></label>
+      <label class="f" style="flex:1"><span>Discount %</span><input id="bkPct" type="number" step="0.5" value="6"></label></div>
+    <button class="btn pri w" style="margin-top:10px" onclick="breakSave()">Add break</button>`);
+};
+window.breakSave = () => {
+  S.breaks.push({id:uid('B'), qty:+$('#bkQty').value||0, pct:+$('#bkPct').value||0});
+  save(); closeSheet(); renderPrice2(); toast('Volume break added');
+};
+window.breakDel = id => { S.breaks = S.breaks.filter(b=>b.id!==id); save(); renderPrice2(); };
+
+/* ── REPS & TERRITORIES ── */
+function repStats(rid){
+  const mine = S.so.filter(o => o.rep === rid && SOI(o.stage) >= SOI('DELIVERED'));
+  const sacks = mine.reduce((a,o) => a + o.lines.reduce((x,l)=>x+(l.qty-(l.short||0)),0), 0);
+  const value = mine.reduce((a,o) => a + o.total, 0);
+  const r = S.reps.find(x=>x.id===rid) || {quota:1, comm:0};
+  return {orders:mine.length, sacks, value, att: r.quota ? sacks/r.quota*100 : 0, comm: value * (+r.comm||0)/100};
+}
+function renderRep(){
+  ensureSD();
+  const tot = S.reps.reduce((a,r) => { const s = repStats(r.id); return {sacks:a.sacks+s.sacks, val:a.val+s.value, comm:a.comm+s.comm}; }, {sacks:0,val:0,comm:0});
+  $('#repN').textContent = S.reps.filter(r=>r.active).length;
+  $('#repSacks').textContent = tot.sacks.toLocaleString();
+  $('#repVal').textContent = Pk(tot.val);
+  $('#repComm').textContent = Pk(tot.comm);
+  $('#repList').innerHTML = S.reps.map(r => {
+    const s = repStats(r.id), pct = Math.min(100, Math.round(s.att));
+    return `<div class="item" onclick="repSheet('${r.id}')">
+      <span class="tag ${s.att>=100?'t-ok':s.att>=70?'':'t-warn'}">${Math.round(s.att)}%</span>
+      <div class="g"><b>${escH(r.name)}</b><small>${escH(r.area)} · ${s.sacks}/${r.quota} sacks · ${Pk(s.value)}</small>
+        <div class="bar"><i style="width:${pct}%"></i></div></div>
+      <span class="tag">${Pk(s.comm)}</span></div>`;
+  }).join('');
+}
+window.repSheet = id => {
+  const r = S.reps.find(x=>x.id===id), s = repStats(id);
+  const mine = S.so.filter(o=>o.rep===id).slice(0,8);
+  sheet(`<h2 class="sec">${escH(r.name)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(r.phone)}</span>
+      <span class="tag ${s.att>=100?'t-ok':''}">${Math.round(s.att)}% of quota</span><span class="tag">${r.comm}% commission</span></div>
+    <p class="muted" style="font-size:12.5px">Territory: ${escH(r.area)}</p>
+    <div class="grid g3" style="margin:10px 0">
+      <div class="kpi acc-c"><div class="lab">Sacks sold</div><div class="val" style="font-size:20px">${s.sacks}</div><div class="sub">quota ${r.quota}</div></div>
+      <div class="kpi acc-y"><div class="lab">Value</div><div class="val" style="font-size:20px">${Pk(s.value)}</div><div class="sub">${s.orders} order(s)</div></div>
+      <div class="kpi acc-g"><div class="lab">Commission</div><div class="val" style="font-size:20px">${Pk(s.comm)}</div><div class="sub">at ${r.comm}%</div></div>
+    </div>
+    <h2 class="sec" style="font-size:13px">Recent orders</h2>
+    ${mine.length?mine.map(o=>`<div class="item" onclick="soSheet('${o.id}')"><div class="g"><b>${escH(o.ref)}</b>
+      <small>${escH(o.custName)} · ${Pk(o.total)} · ${escH(SOG(o.stage).l)}</small></div></div>`).join(''):'<div class="empty">No orders yet.</div>'}
+    <button class="btn w" style="margin-top:10px" onclick="repEdit('${id}')">Edit rep</button>`);
+};
+window.repEdit = id => {
+  const r = id ? S.reps.find(x=>x.id===id) : {id:'', name:'', phone:'', area:'', quota:1000, comm:1.5, active:true};
+  sheet(`<h2 class="sec">${id?'Edit':'New'} sales rep</h2>
+    <div class="row"><label class="f" style="flex:1"><span>Name</span><input id="rfName" value="${escH(r.name)}"></label>
+      <label class="f" style="flex:1"><span>Phone</span><input id="rfPh" value="${escH(r.phone)}"></label></div>
+    <label class="f"><span>Territory (barangays)</span><input id="rfArea" value="${escH(r.area)}"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Monthly quota (sacks)</span><input id="rfQuota" type="number" value="${r.quota}"></label>
+      <label class="f" style="flex:1"><span>Commission %</span><input id="rfComm" type="number" step="0.1" value="${r.comm}"></label></div>
+    <button class="btn pri w" style="margin-top:10px" onclick="repSave('${id||''}')">Save rep</button>`);
+};
+window.repSave = async id => {
+  const o = {id:id||uid('R'), name:$('#rfName').value.trim(), phone:$('#rfPh').value.trim(),
+    area:$('#rfArea').value.trim(), quota:+$('#rfQuota').value||0, comm:+$('#rfComm').value||0, active:true};
+  if (!o.name) return toast('Name required');
+  const i = S.reps.findIndex(x=>x.id===id);
+  if (i>=0) S.reps[i] = o; else S.reps.push(o);
+  save(); await audit('rep.save', {name:o.name});
+  closeSheet(); renderRep(); toast('Sales rep saved');
+};
+
+/* ── ROUTES / VAN SELLING ── */
+function renderRoute(){
+  ensureSD();
+  const active = S.runs.filter(r => !r.done);
+  $('#rtN').textContent = S.routes.length;
+  $('#rtActive').textContent = active.length;
+  $('#rtSold').textContent = S.runs.filter(r=>r.date===today()).reduce((a,r)=>a+(r.sold||0),0) + ' sacks';
+  $('#rtList').innerHTML = S.routes.map(r => {
+    const rep = S.reps.find(x=>x.id===r.rep), v = S.fleet.find(x=>x.id===r.veh);
+    const run = active.find(x=>x.route===r.id);
+    return `<div class="item" onclick="routeSheet('${r.id}')">
+      <span class="tag ${run?'t-ok':'t-dim'}">${run?'▶':escH(r.day.split(' ')[0])}</span>
+      <div class="g"><b>${escH(r.name)}${run?' <span class="tag t-ok">running</span>':''}</b>
+        <small>${escH(r.day)} · ${r.stops.length} stops · ${rep?escH(rep.name):'—'}${v?' · '+escH(v.plate):''}</small></div>
+      <span class="tag">${r.load} sk</span></div>`;
+  }).join('');
+  $('#runList').innerHTML = S.runs.length ? S.runs.slice(0,8).map(r => {
+    const rt = S.routes.find(x=>x.id===r.route);
+    return `<div class="item" onclick="runSheet('${r.id}')">
+      <span class="tag ${r.done?'t-ok':'t-warn'}">${r.done?'✓':'▶'}</span>
+      <div class="g"><b>${escH(rt?rt.name:'—')} · ${r.date}</b>
+        <small>${r.visited||0}/${(rt?rt.stops.length:0)} stops · ${r.sold||0} sacks sold · ${Pk(r.value||0)}</small></div></div>`;
+  }).join('') : '<div class="empty">No route runs yet.</div>';
+}
+window.routeSheet = id => {
+  const r = S.routes.find(x=>x.id===id); if (!r) return;
+  const rep = S.reps.find(x=>x.id===r.rep), v = S.fleet.find(x=>x.id===r.veh);
+  const run = S.runs.find(x=>x.route===id && !x.done);
+  sheet(`<h2 class="sec">${escH(r.name)}</h2>
+    <div class="row tight" style="margin-bottom:8px"><span class="tag">${escH(r.day)}</span>
+      ${rep?`<span class="tag">${escH(rep.name)}</span>`:''}${v?`<span class="tag">${escH(v.plate)}</span>`:''}
+      <span class="tag">${r.load} sacks load-out</span></div>
+    <h2 class="sec" style="font-size:13px">Stops</h2>
+    ${r.stops.map((s,i)=>`<div class="item"><span class="tag">${i+1}</span><div class="g"><b>${escH(s)}</b></div></div>`).join('')}
+    ${run?`<div class="ai-note" style="margin-top:10px"><b>Running now</b>${run.visited||0} of ${r.stops.length} stops visited · ${run.sold||0} sacks sold</div>
+      <button class="btn pri w" style="margin-top:8px" onclick="runSheet('${run.id}')">Open today's run</button>`
+     :`<button class="btn pri w" style="margin-top:10px" onclick="runStart('${id}')">Start route run</button>`}
+    <button class="btn w" style="margin-top:8px" onclick="routeEdit('${id}')">Edit route</button>`);
+};
+window.routeEdit = id => {
+  const r = id ? S.routes.find(x=>x.id===id) : {id:'', name:'', day:'Mon', rep:'', veh:'', stops:[], load:100};
+  sheet(`<h2 class="sec">${id?'Edit':'New'} route</h2>
+    <label class="f"><span>Route name</span><input id="rtName" value="${escH(r.name)}"></label>
+    <div class="row"><label class="f" style="flex:1"><span>Days</span><input id="rtDay" value="${escH(r.day)}" placeholder="Mon · Thu"></label>
+      <label class="f" style="flex:1"><span>Load-out (sacks)</span><input id="rtLoad" type="number" value="${r.load}"></label></div>
+    <div class="row"><label class="f" style="flex:1"><span>Rep</span><select id="rtRep">${S.reps.map(x=>`<option value="${x.id}" ${r.rep===x.id?'selected':''}>${escH(x.name)}</option>`).join('')}</select></label>
+      <label class="f" style="flex:1"><span>Vehicle</span><select id="rtVeh">${S.fleet.map(x=>`<option value="${x.id}" ${r.veh===x.id?'selected':''}>${escH(x.plate)}</option>`).join('')}</select></label></div>
+    <label class="f"><span>Stops (one per line)</span><textarea id="rtStops" rows="4">${escH((r.stops||[]).join('\n'))}</textarea></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="routeSave('${id||''}')">Save route</button>`);
+};
+window.routeSave = async id => {
+  const o = {id:id||uid('RT'), name:$('#rtName').value.trim(), day:$('#rtDay').value.trim(),
+    rep:$('#rtRep').value, veh:$('#rtVeh').value, load:+$('#rtLoad').value||0,
+    stops:$('#rtStops').value.split('\n').map(s=>s.trim()).filter(Boolean)};
+  if (!o.name) return toast('Route name required');
+  const i = S.routes.findIndex(x=>x.id===id);
+  if (i>=0) S.routes[i] = o; else S.routes.push(o);
+  save(); await audit('route.save', {name:o.name});
+  closeSheet(); renderRoute(); toast('Route saved');
+};
+window.runStart = async rid => {
+  const rt = S.routes.find(x=>x.id===rid);
+  const run = {id:uid('RUN'), route:rid, date:today(), start:new Date().toISOString(),
+    visited:0, sold:0, value:0, calls:[], done:false};
+  S.runs.unshift(run); save(); await audit('route.run.start', {route:rt.name});
+  closeSheet(); renderRoute(); toast('Route run started — ' + rt.stops.length + ' stops');
+  runSheet(run.id);
+};
+window.runSheet = id => {
+  const run = S.runs.find(x=>x.id===id); if (!run) return;
+  const rt = S.routes.find(x=>x.id===run.route);
+  sheet(`<h2 class="sec">${escH(rt?rt.name:'Run')} · ${run.date}</h2>
+    <div class="grid g3" style="margin-bottom:10px">
+      <div class="kpi acc-c"><div class="lab">Stops</div><div class="val" style="font-size:20px">${run.visited||0}/${rt?rt.stops.length:0}</div><div class="sub">visited</div></div>
+      <div class="kpi acc-y"><div class="lab">Sold</div><div class="val" style="font-size:20px">${run.sold||0}</div><div class="sub">sacks</div></div>
+      <div class="kpi acc-g"><div class="lab">Value</div><div class="val" style="font-size:20px">${Pk(run.value||0)}</div><div class="sub">${(run.calls||[]).filter(c=>c.sold>0).length} sales</div></div>
+    </div>
+    ${!run.done?(rt?rt.stops:[]).map((s,i)=>{
+      const call = (run.calls||[]).find(c=>c.stop===s);
+      return `<div class="item"><span class="tag ${call?(call.sold?'t-ok':'t-warn'):'t-dim'}">${i+1}</span>
+        <div class="g"><b>${escH(s)}</b><small>${call?(call.sold?call.sold+' sacks · '+Pk(call.value):'no order'):'not visited'}</small></div>
+        ${!call?`<button class="btn sm pri" onclick="runCall('${run.id}','${escH(s).replace(/'/g,"")}')">Call</button>`:''}</div>`;
+    }).join(''):'<div class="ai-note"><b>Closed</b>Run finished.</div>'}
+    ${!run.done?`<button class="btn w" style="margin-top:10px" onclick="runEnd('${run.id}')">End run & reconcile</button>`:''}`);
+};
+window.runCall = (rid, stop) => {
+  const run = S.runs.find(x=>x.id===rid);
+  sheet(`<h2 class="sec">${escH(stop)}</h2>
+    <label class="f"><span>Product</span><select id="rcSku">${S.products.map(p=>`<option value="${p.id}">${escH(p.name)} — ${P(p.price)}</option>`).join('')}</select></label>
+    <label class="f"><span>Sacks sold (0 = no order)</span><input id="rcQty" type="number" value="5"></label>
+    <label class="f"><span>Payment</span><select id="rcPay"><option>Cash</option><option>GCash</option><option>Credit (terms)</option></select></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="runCallSave('${rid}','${escH(stop).replace(/'/g,"")}')">Record call</button>`);
+};
+window.runCallSave = async (rid, stop) => {
+  const run = S.runs.find(x=>x.id===rid);
+  const sku = $('#rcSku').value, qty = +$('#rcQty').value||0, pay = $('#rcPay').value;
+  const p = S.products.find(x=>x.id===sku);
+  const pr = priceFor(sku, qty, '');
+  const value = qty * pr.unit;
+  (run.calls = run.calls||[]).push({stop, sku, sold:qty, value, pay, ts:new Date().toISOString()});
+  run.visited = (run.visited||0) + 1;
+  run.sold = (run.sold||0) + qty; run.value = (run.value||0) + value;
+  if (qty > 0 && p){
+    p.qty = Math.max(0, (+p.qty||0) - qty);
+    const sale = {id:'SI-'+today().replace(/-/g,'')+'-VAN'+String(S.sales.length+1).padStart(3,'0'),
+      date:today(), ts:new Date().toISOString(),
+      lines:[{sku, name:p.name, price:pr.unit, cost:+p.cost||0, qty, kg:p.kg||50}],
+      sub:value, disc:0, vat:0, total:value, cost:qty*(+p.cost||0),
+      custName:stop, pay, paid:pay!=='Credit (terms)', by:ME?ME.u:'system', route:run.id};
+    S.sales.push(sale); enqueue('sales', sale);
+    S.moves.push({id:uid('m'), ts:new Date().toISOString(), sku, name:p.name, qty:-qty,
+      from:'VAN', to:stop, ref:sale.id, by:ME?ME.u:'system'});
+  }
+  save(); await audit('route.call', {stop, qty, value});
+  runSheet(rid); renderRoute();
+  toast(qty ? qty + ' sacks sold at ' + stop : 'No order logged at ' + stop);
+};
+window.runEnd = async id => {
+  const run = S.runs.find(x=>x.id===id);
+  run.done = true; run.end = new Date().toISOString();
+  save(); await audit('route.run.end', {sold:run.sold, value:run.value});
+  closeSheet(); renderRoute();
+  toast('Run closed — ' + (run.sold||0) + ' sacks, ' + Pk(run.value||0));
+};
+
+/* wiring */
+$('#soAdd').onclick = soNew;
+$('#tierAdd').onclick = () => tierEdit('');
+$('#breakAdd').onclick = breakAdd;
+$('#repAdd').onclick = () => repEdit('');
+$('#rtAdd').onclick = () => routeEdit('');
+
 /* ════════════ RENDER ROUTER ════════════ */
 function render(v) {
   const cur = v || $('.view.on').id.replace('v-', '');
   if (cur === 'dash') renderDash();
   if (cur === 'pos') renderPOS();
   if (cur === 'inv') renderInv();
-  if (cur === 'dist') { renderNxm(); renderShop(); renderDist(); }
+  if (cur === 'dist') { renderSO(); renderPrice2(); renderRep(); renderRoute(); renderNxm(); renderShop(); renderDist(); renderAgents(); }
+  if (cur === 'chain') { renderOvs(); renderWh(); renderImp(); renderUnl(); renderTms(); renderWms(); }
+  if (cur === 'adm') renderLic();
+  licNavPaint();
   if (cur === 'bi') { renderBI(); renderFc(); renderPrice(); renderRep(); drawChat(); }
   if (cur === 'adm') { renderNotif(); renderConn(); renderUsers(); renderCfg(); renderBackend(); renderAudit(); }
   net();
@@ -4104,7 +6613,9 @@ addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTim
 
 /* ════════════ BOOT ════════════ */
 async function boot() {
-  ['invTabs', 'distTabs', 'biTabs', 'admTabs'].forEach(tabWire);
+  ['invTabs', 'distTabs', 'chainTabs', 'biTabs', 'admTabs'].forEach(tabWire);
+  ensureChain();
+  ensureLic(); licNavPaint(); licCloudCheck();
   $('#branchLbl').textContent = S.cfg.branch;
   applyBrand();
   $('#syncBtn').onclick = () => { flushQueue(); toast(S.cfg.gas ? 'Syncing ' + S.queue.length + ' record(s)…' : 'No backend configured — records stay on this device.'); };
