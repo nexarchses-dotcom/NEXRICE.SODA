@@ -1167,7 +1167,25 @@ const $ = s => document.querySelector(s);
 // Public config for the delivery-agent portal — usable BEFORE any staff login.
 // Paste the same Apps Script URL + SHOP_KEY you already gave NEXSHOP so a
 // rider's own phone can register / share GPS without a staff account.
-const AGENT_CFG = { gas: '', shopKey: '' };
+// This can be filled here by hand, but it also auto-populates from the staff
+// backend settings (Admin → Settings) and persists to this device — so once
+// an owner configures the backend anywhere, the rider portal just works.
+const AGENT_CFG = (() => {
+  const base = { gas: '', shopKey: '' };
+  try {
+    const saved = JSON.parse(localStorage.getItem('nexrice.agentcfg') || 'null');
+    if (saved && saved.gas) return saved;
+  } catch (e) {}
+  return base;
+})();
+// Called after the staff backend is configured — copies it into AGENT_CFG so
+// the rider portal (which never logs in as staff) inherits the same endpoint.
+function syncAgentCfg(){
+  if (typeof S === 'undefined' || !S.cfg || !S.cfg.gas) return;
+  AGENT_CFG.gas = S.cfg.gas;
+  AGENT_CFG.shopKey = AGENT_CFG.shopKey || S.cfg.key;   // prefer an explicit SHOP_KEY if one was set by hand
+  try { localStorage.setItem('nexrice.agentcfg', JSON.stringify(AGENT_CFG)); } catch (e) {}
+}
 const $$ = s => [...document.querySelectorAll(s)];
 const P = n => '₱' + (+n || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const Pk = n => '₱' + Math.round(+n || 0).toLocaleString('en-PH');
@@ -2840,6 +2858,7 @@ $('#cfgSave').onclick = async () => {
 $('#aiSave').onclick = () => { S.cfg.ai = $('#cAi').value; S.cfg.aiKey = $('#cAiKey').value; save(); toast('AI provider set to ' + S.cfg.ai + '.'); };
 $('#cTest').onclick = async () => {
   S.cfg.gas = $('#cGas').value.trim(); S.cfg.key = $('#cKey').value.trim(); save();
+  syncAgentCfg();   // let the rider portal inherit the same backend, no manual file edit
   if (!S.cfg.gas) return toast('Paste the Apps Script web app URL first.');
   try {
     const r = await fetch(S.cfg.gas + '?action=ping&key=' + encodeURIComponent(S.cfg.key));
@@ -2914,10 +2933,14 @@ function sheet(name, headers){
 }
 
 function doGet(e){
-  if (!auth(e)) return err('bad key');
+  // NOTE: no blanket auth() gate here. Each route below carries its own
+  // guard — admin/staff routes require the API_KEY via auth(e); public
+  // storefront routes (shop_*, agent_login/deliveries) require the weaker
+  // SHOP_KEY. A single top-level auth() check would reject every SHOP_KEY
+  // call before it reached its route, breaking the whole NEXSHOP storefront.
   var a = e.parameter.action;
-  if (a === 'ping') return ok({sheet: SS.getName(), time: new Date().toISOString()});
-  if (a === 'nexmart_pull') return ok(nexmartPull(e.parameter.url, e.parameter.tradeKey));
+  if (a === 'ping') { if (!auth(e)) return err('bad key'); return ok({sheet: SS.getName(), time: new Date().toISOString()}); }
+  if (a === 'nexmart_pull') { if (!auth(e)) return err('bad key'); return ok(nexmartPull(e.parameter.url, e.parameter.tradeKey)); }
   if (a === 'shop_catalog' && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopCatalog());
   if (a === 'shop_ads'     && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopAds());
   if (a === 'shop_track'   && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(shopTrack(e.parameter.order, e.parameter.phone));
@@ -2935,10 +2958,14 @@ function doGet(e){
   if (a === 'license_check' && auth(e)) return ok(licenseCheck());
   if (a === 'gps_list'     && auth(e)) return ok({fixes: gpsList()});
   if (a === 'pull'){
+    if (!auth(e)) return err('bad key');           // admin data — API_KEY only
     var out = {};
     ['products','lots','sales','orders','customers','suppliers'].forEach(function(t){ out[t] = readTab(t); });
     return ok(out);
   }
+  // Reaching here means either an unknown action, or a shop_* route whose
+  // SHOP_KEY didn't match — report the latter honestly so it's diagnosable.
+  if (a && a.indexOf('shop_') === 0) return err('bad shop key');
   return err('unknown action');
 }
 
@@ -6248,7 +6275,7 @@ async function agentApi(params, isPost){
   // fallback to S.cfg for a staff device that's already configured.
   const gasUrl = AGENT_CFG.gas || (typeof S !== 'undefined' && S.cfg && S.cfg.gas) || '';
   const key = AGENT_CFG.shopKey || (typeof S !== 'undefined' && S.cfg && S.cfg.key) || '';
-  if (!gasUrl) throw new Error('offline');
+  if (!gasUrl) throw new Error('The rider portal isn\u2019t connected to a store yet. Ask the store owner to set up Admin \u2192 Settings first.');
   const qs = new URLSearchParams({key, ...params});
   const url = gasUrl + (isPost ? '' : '?' + qs.toString());
   const r = isPost
@@ -6288,7 +6315,7 @@ window.agentSubmitRegister = async () => {
     if (!j.ok) return toast(j.error || 'Could not register — try again.');
     agentSave({name, phone, vehicle: payload.vehicle, plate: payload.plate, areas, status:'pending', code: j.code, id: j.id});
     agentPendingScreen(j.code);
-  } catch (e) { toast('No connection — try again once you\u2019re online.'); }
+  } catch (e) { toast(e.message || 'No connection — try again once you\u2019re online.'); }
 };
 window.agentPendingScreen = (code) => {
   const a = agentSession();
@@ -6920,6 +6947,7 @@ async function boot() {
   $('#cyraRun').click();
   net();
   if (navigator.onLine && S.cfg.gas) { flushQueue(); reuploadStrandedPhotos(); }
+  syncAgentCfg();   // keep the rider portal's backend in step with staff settings
 }
 (async () => {
   await loadState();
