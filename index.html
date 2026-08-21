@@ -1167,7 +1167,7 @@ const $ = s => document.querySelector(s);
 // Public config for the delivery-agent portal — usable BEFORE any staff login.
 // Paste the same Apps Script URL + SHOP_KEY you already gave NEXSHOP so a
 // rider's own phone can register / share GPS without a staff account.
-const AGENT_CFG = { gas: 'https://script.google.com/macros/s/AKfycbweBSc1Qj0xS5cKn-jjtzfYXDkFP7JF5DvxejAXikCQfTL4naSV7X3BZU4E2nNpKRDT/exec', shopKey: 'NX-SHOP12011234523SDFG' };
+const AGENT_CFG = { gas: '', shopKey: '' };
 const $$ = s => [...document.querySelectorAll(s)];
 const P = n => '₱' + (+n || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const Pk = n => '₱' + Math.round(+n || 0).toLocaleString('en-PH');
