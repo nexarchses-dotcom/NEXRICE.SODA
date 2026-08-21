@@ -318,7 +318,7 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
       <label class="f"><span>Passphrase</span><input id="lp" type="password" autocomplete="current-password" placeholder="••••••••"></label>
       <button class="btn pri w" id="loginBtn">Sign in</button>
       <p class="hint">Demo — owner / nexrice2026 · cashier / cashier123 · manager / manager123</p>
-      <button type="button" id="agentPortalLink" style="width:100%;margin-top:14px;background:none;border:none;color:var(--cyan,#00B8D9);font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer">🛵 Delivery rider? Register or view your deliveries</button>
+      <button type="button" id="agentPortalLink" onclick="if(window.agentPortal)agentPortal();else alert('Still loading — please wait a moment and tap again.')" style="width:100%;margin-top:14px;background:none;border:none;color:var(--cyan,#00B8D9);font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer">🛵 Delivery rider? Register or view your deliveries</button>
     </div>
   </div>
 </div>
@@ -6446,7 +6446,8 @@ const SHOP_AREA_COORDS = {
   'Tubod':[8.15,124.24], 'Other (Iligan)':[8.228,124.245]
 };
 
-$('#agentPortalLink').onclick = agentPortal;
+// #agentPortalLink uses an inline onclick (see login screen) so it works
+// even if a later wiring line throws — no assignment needed here.
 
 $('#whAdd').onclick = () => whEdit('');
 $('#whMoveBtn').onclick = () => whMoveNew('');
