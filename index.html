@@ -1121,8 +1121,9 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
 
   <div class="pane" id="p-backend">
     <div class="card">
-      <h2 class="sec">Google Sheets schema</h2>
-      <p class="muted" style="margin:-6px 0 10px">Create one spreadsheet with these tabs, then paste the Apps Script below and deploy as a web app (Execute as: me · Access: anyone).</p>
+      <h2 class="sec">Google Sheets schema<span class="spacer"></span><button class="btn sm pri" id="initSchemaBtn">Create all tabs now</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Most tabs create themselves automatically the first time each feature is used — a trade account only gets a sheet once someone registers, for example — which can make a fresh spreadsheet look mostly empty. Tap the button to create every tab up front instead, with the exact columns the app expects. Safe to run anytime, including on a spreadsheet that already has data — it never touches an existing tab.</p>
+      <div id="initSchemaStat" class="muted" style="margin-bottom:10px"></div>
       <div class="tw"><table id="schemaTbl"><thead><tr><th>Tab</th><th>Columns</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div class="card">
@@ -2869,7 +2870,7 @@ const SCHEMA = [
   ['Lots', 'id · sku · milled · moisture · qty · supplier'],
   ['Sales', 'id · date · ts · lines(JSON) · sub · disc · vat · total · cost · cust · pay · cashier · due · paid'],
   ['Orders', 'id · cust · area · items · sku · total · status · date · eta'],
-  ['PurchaseOrders', 'id · sup · sku · qty · cost · total · status · eta'],
+  ['Purchase_orders', 'id · sup · sku · qty · cost · total · status · eta'],
   ['Customers', 'id · name · type · area · phone · limit · terms · balance · since'],
   ['Suppliers', 'id · name · type · phone · addr · terms'],
   ['Movements', 'id · ts · sku · name · qty · from · to · ref · by'],
@@ -3002,6 +3003,7 @@ function doPost(e){
     if (a === 'shop_status')  return ok(shopStatus(e.parameter.order, e.parameter.status));
     if (a === 'agent_set_status') return ok(agentSetStatus(e.parameter.id, e.parameter.status));
     if (a === 'trade_set_status') return ok(tradeAccountSetStatus(e.parameter.id, e.parameter.status, e.parameter.tier));
+    if (a === 'init_schema') return ok(initSchema());
     if (a === 'shop_assign_agent') return ok(shopAssignAgent(e.parameter.order, e.parameter.agent_id));
   } catch(ex){ return err(String(ex)); }
   return err('unknown action');
@@ -3427,6 +3429,51 @@ function tradeAccountSetStatus(id, status, tier){
     }
   }
   throw new Error('trade account not found');
+}
+/* ══════════════ ONE-TAP SCHEMA SETUP ══════════════
+   Most tabs are created lazily — the first time a feature actually runs
+   (a trade account only gets a sheet the moment someone registers, etc).
+   That's fine once the system is live, but it makes a fresh spreadsheet
+   look mostly empty. This creates every real tab up front, with the exact
+   headers the app actually writes — safe to run anytime: sheet() is a
+   no-op for a tab that already exists, so this never touches real data. */
+function initSchema(){
+  var tabs = [
+    ['Products',       ['id','name','cat','kg','cost','price','qty','bin','reorder','barcode','rfid','active','img','img2','img3','img4','img5','sale_pct','rating','ratings','vgroup','sold']],
+    ['Lots',           ['id','sku','milled','moisture','qty','supplier']],
+    ['Sales',          ['id','date','ts','lines','sub','disc','vat','total','cost','cust','custId','pay','cashier','due','paid']],
+    ['Orders',         ['id','cust','area','items','sku','total','status','date','eta']],
+    ['Purchase_orders',['id','sup','sku','qty','cost','total','status','eta']],
+    ['Customers',      ['id','name','type','area','phone','limit','terms','balance','since']],
+    ['Movements',      ['id','ts','sku','name','qty','from','to','ref','by']],
+    ['Audit',          ['id','ts','user','action','detail','prev','hash']],
+    ['Outbox',         ['id','ts','ch','to','msg','status']],
+    ['Deals',          ['id','ref','stage','sacks','total','paid','quote','po','dr','saleId','created','closed']],
+    ['TradeLog',       ['ts','deal','ref','event','note','direction','payload']],
+    ['ShopOrders',     ['id','order_no','ts','name','phone','area','address','note','items','subtotal','delivery','total','payment_method','payment_ref','payment_status','status','account_id','tier','channel','agent_id','agent_name','agent_phone','agent_delivered_ts']],
+    ['DeliveryAgents', ['id','ts','name','phone','vehicle','plate','areas','status','code']],
+    ['TradeAccounts',  ['id','ts','biz','type','name','phone','area','addr','permit','tier','status','code','addresses']],
+    ['ShopQnA',        ['id','ts','sku','name','q','a']],
+    ['Subscriptions',  ['id','ts','phone','biz','sku','name','qty','freq','next','unit','active']],
+    ['Followers',      ['phone','on','ts']],
+    ['GPSFeed',        ['ts','dev','lat','lon','spd','hdg','raw']],
+    ['Vouchers',       ['code','kind','value','min','cap','label','desc','active']],
+    ['Reviews',        ['ts','sku','order_no','name','stars','text']],
+    ['ShopChat',       ['ts','name','phone','text']],
+    ['Ads',            ['id','title','text','image_url','link','color','active','slot']],
+    ['Config',         ['key','value']],
+    // Never auto-created by any feature — pre-made here purely so they're
+    // ready for you to type into by hand, exactly as the app expects them.
+    ['Tiers',          ['id','name','pct','min']],
+    ['Broadcasts',     ['ts','title','body','link']]
+  ];
+  var created = [], existing = [];
+  tabs.forEach(function(t){
+    var already = !!SS.getSheetByName(t[0]);
+    sheet(t[0], t[1]);
+    (already ? existing : created).push(t[0]);
+  });
+  return {created: created, existing: existing, total: tabs.length};
 }
 function agentList(){
   return readTab('deliveryAgents').map(function(r){
@@ -3861,6 +3908,18 @@ function renderBackend() {
   $('#gasBox').textContent = GAS;
 }
 $('#copyGas').onclick = () => { navigator.clipboard.writeText(GAS); toast('Code.gs copied.'); };
+$('#initSchemaBtn').onclick = async () => {
+  if (!S.cfg.gas) return toast('Configure the backend first — the Cloud backend card above.');
+  $('#initSchemaStat').textContent = 'Creating tabs…';
+  try {
+    const r = await fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({action:'init_schema', key:S.cfg.key})});
+    const j = await r.json();
+    if (!j.ok) { $('#initSchemaStat').textContent = 'Failed: ' + (j.error||'unknown error'); return; }
+    $('#initSchemaStat').innerHTML = `<b style="color:var(--ok,#1FBF75)">✓ Done</b> — ${j.created.length} tab(s) created, ${j.existing.length} already there, ${j.total} total.`;
+    toast('Spreadsheet ready — ' + j.total + ' tabs.');
+  } catch (e) { $('#initSchemaStat').textContent = 'Could not reach the backend.'; }
+};
 
 /* ════════════ AUDIT ════════════ */
 function renderAudit() {
@@ -4475,7 +4534,7 @@ async function tradeLog(deal, ev, note, dir) {
           : sent ? 'ok' : 'fail';
   S.tradelog.unshift(e);
   if (S.tradelog.length > 400) S.tradelog.pop();
-  enqueue('tradelog', e);
+  enqueue('tradeLog', e);
   save();
 }
 
@@ -4486,7 +4545,7 @@ window.resendTrade = async tid => {
   toast('Resending ' + e.ev + '…');
   const sent = await postToNexmart(e.ev, d, e.note);
   e.relay = sent ? 'ok' : 'fail';
-  enqueue('tradelog', e); save();
+  enqueue('tradeLog', e); save();
   toast(sent ? '✓ NEXMART received ' + e.ev : 'Still unreachable — check NEXMART_URL / TRADE_KEY in the Config sheet.');
   dealSheet(d.id);
 };
@@ -4989,7 +5048,7 @@ async function doShopAdvance(no) {
   }
 
   o.status = to;
-  enqueue('shop_orders', {...o, items: JSON.stringify(o.items)});
+  enqueue('shopOrders', {...o, items: JSON.stringify(o.items)});
   await audit('shop.status', {order: no, to});
   if (S.cfg.gas && navigator.onLine) {            // Sheet updates + customer SMS fire server-side
     try {
