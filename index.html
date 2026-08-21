@@ -503,7 +503,7 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
 <!-- ─── DISTRIBUTION ─── -->
 <section class="view" id="v-dist">
   <div class="tabs" id="distTabs">
-    <button class="on" data-p="so">Sales orders</button><button data-p="pricing">Pricing</button><button data-p="reps">Sales team</button><button data-p="route">Routes</button><button data-p="nxm">NEXMART Link</button><button data-p="shop">NEXSHOP</button><button data-p="orders">Orders</button><button data-p="deliv">Dispatch</button><button data-p="agents">Agents</button>
+    <button class="on" data-p="so">Sales orders</button><button data-p="pricing">Pricing</button><button data-p="reps">Sales team</button><button data-p="route">Routes</button><button data-p="nxm">NEXMART Link</button><button data-p="shop">NEXSHOP</button><button data-p="orders">Orders</button><button data-p="deliv">Dispatch</button><button data-p="agents">Agents</button><button data-p="trade">Trade accounts</button>
     <button data-p="cust">Customers</button><button data-p="proc">Procurement</button><button data-p="ar">Receivables</button>
   </div>
 
@@ -652,6 +652,19 @@ pre.gs{background:#06152F;border:1px solid var(--line-2);border-radius:var(--r-s
         <div class="kpi acc-g"><div class="lab">Out for delivery</div><div class="val" id="agOut">0</div><div class="sub">right now</div></div>
       </div>
       <div id="agList"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="p-trade">
+    <div class="card">
+      <h2 class="sec">Trade accounts<span class="spacer"></span><button class="btn sm pri" id="tradeRefreshBtn">↻ Refresh</button></h2>
+      <p class="muted" style="margin:-6px 0 10px">Retailers and distributors register themselves on NEXSHOP. Approve them and set a tier — their wholesale price and registered delivery address go live the moment they next open the store.</p>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div class="kpi acc-c"><div class="lab">Approved</div><div class="val" id="trN">0</div><div class="sub" id="trTiers">—</div></div>
+        <div class="kpi acc-y"><div class="lab">Pending approval</div><div class="val" id="trPend">0</div><div class="sub">awaiting review</div></div>
+        <div class="kpi acc-g"><div class="lab">Distributors</div><div class="val" id="trDist">0</div><div class="sub">T3 tier</div></div>
+      </div>
+      <div id="trList"></div>
     </div>
   </div>
 
@@ -1199,7 +1212,7 @@ function idbGet(k) {
 
 const DEFAULTS = () => ({
   cfg: {name: 'NEXRICE Grains Trading', branch: 'Main Warehouse', cur: '₱', sack: 50, vat: 0, low: 20, gas: '', key: '', ai: 'local', aiKey: '', logo: '', logoName: ''},
-  users: [], products: [], lots: [], sales: [], orders: [], customers: [], suppliers: [], pos: [], agents: [],
+  users: [], products: [], lots: [], sales: [], orders: [], customers: [], suppliers: [], pos: [], agents: [], tradeAccounts: [],
   bins: ['Bay A', 'Bay B', 'Bay C', 'Retail Front', 'Cold Store'],
   moves: [], audit: [], outbox: [], connectors: [], rules: [], queue: [], chats: [], models: {},
   meta: {seeded: false, lastSync: null}
@@ -2916,6 +2929,7 @@ function doGet(e){
   if (a === 'agent_login'      && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(agentLogin(e.parameter.phone, e.parameter.code));
   if (a === 'agent_deliveries' && e.parameter.key === (cfg('SHOP_KEY') || API_KEY)) return ok(agentDeliveries(e.parameter.phone, e.parameter.code));
   if (a === 'agent_list'       && auth(e)) return ok({agents: agentList()});
+  if (a === 'trade_list'       && auth(e)) return ok({accounts: tradeAccountList()});
   if (a === 'shop_list'    && auth(e)) return ok({orders: readTab('shopOrders')});
   if (a === 'license_check' && auth(e)) return ok(licenseCheck());
   if (a === 'gps_list'     && auth(e)) return ok({fixes: gpsList()});
@@ -2987,6 +3001,7 @@ function doPost(e){
     if (a === 'image')       return ok(saveImage(e.parameter.name, e.parameter.data));
     if (a === 'shop_status')  return ok(shopStatus(e.parameter.order, e.parameter.status));
     if (a === 'agent_set_status') return ok(agentSetStatus(e.parameter.id, e.parameter.status));
+    if (a === 'trade_set_status') return ok(tradeAccountSetStatus(e.parameter.id, e.parameter.status, e.parameter.tier));
     if (a === 'shop_assign_agent') return ok(shopAssignAgent(e.parameter.order, e.parameter.agent_id));
   } catch(ex){ return err(String(ex)); }
   return err('unknown action');
@@ -3378,6 +3393,40 @@ function agentLogin(phone, code){
   if (String(r.code) !== String(code)) return {agent: null, error: 'Wrong code'};
   return {agent: {id:r.id, name:r.name, phone:r.phone, vehicle:r.vehicle, plate:r.plate,
     areas: r.areas ? String(r.areas).split(',').map(function(x){return x.trim();}) : [], status:r.status}};
+}
+/* ══════════════ TRADE ACCOUNT APPROVAL (staff side) ══════════════
+   Retailers/distributors self-register from NEXSHOP and land in
+   TradeAccounts as "pending" (see shopRegister). Staff approve and set
+   a tier here — the account's tier pricing goes live on NEXSHOP the
+   moment they next sync/log in. No manual Sheet edits required.
+   ================================================================== */
+function tradeAccountList(){
+  return readTab('tradeAccounts').map(function(r){
+    var addresses = []; try { addresses = JSON.parse(r.addresses || '[]'); } catch(e){}
+    return {id:r.id, ts:r.ts, biz:r.biz, type:r.type, name:r.name, phone:r.phone,
+      area:r.area, addr:r.addr, permit:r.permit, tier:r.tier || 'T1', status:r.status || 'pending',
+      code:r.code, addresses:addresses};
+  }).reverse();
+}
+function tradeAccountSetStatus(id, status, tier){
+  var sh = SS.getSheetByName('TradeAccounts');
+  if (!sh) throw new Error('no trade accounts yet');
+  var vals = sh.getDataRange().getValues(), hdr = vals[0];
+  var iId = hdr.indexOf('id'), iSt = hdr.indexOf('status'), iTier = hdr.indexOf('tier'),
+      iPh = hdr.indexOf('phone'), iBiz = hdr.indexOf('biz');
+  for (var i = 1; i < vals.length; i++){
+    if (vals[i][iId] === id){
+      sh.getRange(i+1, iSt+1).setValue(status);
+      if (tier) sh.getRange(i+1, iTier+1).setValue(tier);
+      if (status === 'approved'){
+        var tiers = shopTiers().tiers, t = tiers.find(function(x){ return x.id === (tier || vals[i][iTier]); });
+        smsSafe_(vals[i][iPh], 'NEXSHOP: ' + vals[i][iBiz] + ' is approved for ' +
+          (t ? t.name : 'trade') + ' pricing. Log in on the store to see it.');
+      }
+      return {id: id, status: status, tier: tier || vals[i][iTier]};
+    }
+  }
+  throw new Error('trade account not found');
 }
 function agentList(){
   return readTab('deliveryAgents').map(function(r){
@@ -5038,6 +5087,77 @@ window.agentSuspend = async id => {
   save(); renderAgents(); toast(a.name + ' → ' + to);
 };
 
+/* ── trade-account roster: approve (with tier) / suspend, pulled from the Sheet ── */
+const TIER_LABEL = {T1:'Retail', T2:'Wholesale', T3:'Distributor', T4:'Institutional'};
+function ensureTrade(){ if (!S.tradeAccounts) S.tradeAccounts = []; }
+$('#tradeRefreshBtn').onclick = async () => {
+  ensureTrade();
+  if (!S.cfg.gas) return toast('Configure the backend first — Admin → Backend.');
+  try {
+    const r = await fetch(S.cfg.gas + '?action=trade_list&key=' + encodeURIComponent(S.cfg.key));
+    const j = await r.json();
+    if (!j.ok) return toast('Sheet rejected the pull.');
+    S.tradeAccounts = j.accounts || [];
+    save(); renderTrade();
+    toast(S.tradeAccounts.length + ' account(s) synced');
+  } catch (e) { toast('Pull failed — offline?'); }
+};
+function renderTrade(){
+  ensureTrade();
+  const approved = S.tradeAccounts.filter(a => a.status === 'approved');
+  const pending = S.tradeAccounts.filter(a => a.status === 'pending');
+  $('#trN').textContent = approved.length;
+  $('#trTiers').textContent = [...new Set(approved.map(a => TIER_LABEL[a.tier] || a.tier))].join(', ') || '—';
+  $('#trPend').textContent = pending.length;
+  $('#trDist').textContent = approved.filter(a => a.tier === 'T3').length;
+  const row = a => `<div class="item">
+    <span class="tag ${a.status==='approved'?'t-ok':a.status==='pending'?'t-warn':'t-dim'}">${a.status==='approved'?escH(TIER_LABEL[a.tier]||a.tier):escH(a.type||'')}</span>
+    <div class="g"><b>${escH(a.biz)}</b><small>${escH(a.name||'')} · ${escH(a.phone)} · ${escH(a.area||'')}</small></div>
+    ${a.status==='pending'
+      ? `<button class="btn sm pri" onclick="tradeApprove('${a.id}')">Approve</button>`
+      : `<button class="btn sm" onclick="tradeSuspend('${a.id}')">${a.status==='approved'?'Suspend':'Reinstate'}</button>`}
+  </div>`;
+  $('#trList').innerHTML = S.tradeAccounts.length
+    ? pending.map(row).join('') + S.tradeAccounts.filter(a=>a.status!=='pending').map(row).join('')
+    : `<div class="empty">No trade accounts yet — tap Refresh once one registers on NEXSHOP.</div>`;
+}
+window.tradeApprove = id => {
+  const a = S.tradeAccounts.find(x => x.id === id);
+  sheet(`<h2 class="sec">Approve ${escH(a.biz)}</h2>
+    <p class="muted" style="margin:-6px 0 10px">${escH(a.name||'')} · ${escH(a.phone)}<br>${escH(a.type||'')} · ${escH(a.area||'')}${a.addr?' · '+escH(a.addr):''}${a.permit?'<br>Permit: '+escH(a.permit):''}</p>
+    <label class="f"><span>Pricing tier</span><select id="trTier">
+      ${(S.tiers||[{id:'T2',name:'Wholesale'},{id:'T3',name:'Distributor'},{id:'T4',name:'Institutional'}]).filter(t=>t.id!=='T1').map(t=>`<option value="${t.id}">${escH(t.name)}</option>`).join('')}
+    </select></label>
+    <button class="btn pri w" style="margin-top:10px" onclick="tradeApproveConfirm('${id}')">Approve at this tier</button>`);
+};
+window.tradeApproveConfirm = async id => {
+  const a = S.tradeAccounts.find(x => x.id === id);
+  const tier = $('#trTier').value;
+  a.status = 'approved'; a.tier = tier;
+  if (S.cfg.gas && navigator.onLine) {
+    try {
+      await fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({action:'trade_set_status', key:S.cfg.key, id, status:'approved', tier})});
+    } catch(e) {}
+  }
+  await audit('trade.approve', {id, biz:a.biz, tier});
+  save(); closeSheet(); renderTrade();
+  toast(a.biz + ' approved — ' + (TIER_LABEL[tier]||tier));
+};
+window.tradeSuspend = async id => {
+  const a = S.tradeAccounts.find(x => x.id === id);
+  const to = a.status === 'approved' ? 'suspended' : 'approved';
+  a.status = to;
+  if (S.cfg.gas && navigator.onLine) {
+    try {
+      await fetch(S.cfg.gas, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({action:'trade_set_status', key:S.cfg.key, id, status:to, tier:a.tier})});
+    } catch(e) {}
+  }
+  await audit('trade.status', {id, biz:a.biz, to});
+  save(); renderTrade(); toast(a.biz + ' → ' + to);
+};
+
 function renderShop() {
   ensureShop();
   const open = S.shopOrders.filter(o => !['delivered'].includes(o.status));
@@ -5242,7 +5362,7 @@ function ensureChain(){
 
 /* ─────────── SUPPLIERS ─────────── */
 function renderOvs(){
-  ensureChain(); ensureWh(); ensureSD(); ensureAgents();
+  ensureChain(); ensureWh(); ensureSD(); ensureAgents(); ensureTrade();
   const L = S.impSuppliers;
   $('#ovsN').textContent = L.length;
   const cty = [...new Set(L.map(s => s.country))];
@@ -6719,7 +6839,7 @@ function render(v) {
   if (cur === 'dash') renderDash();
   if (cur === 'pos') renderPOS();
   if (cur === 'inv') renderInv();
-  if (cur === 'dist') { renderSO(); renderPrice2(); renderRep(); renderRoute(); renderNxm(); renderShop(); renderDist(); renderAgents(); }
+  if (cur === 'dist') { renderSO(); renderPrice2(); renderRep(); renderRoute(); renderNxm(); renderShop(); renderDist(); renderAgents(); renderTrade(); }
   if (cur === 'chain') { renderOvs(); renderWh(); renderImp(); renderUnl(); renderTms(); renderWms(); }
   if (cur === 'adm') renderLic();
   licNavPaint();
